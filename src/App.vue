@@ -5,7 +5,6 @@ import { motionScope, onReducedMotion, reducedMotion } from '@rafaelaugusto/jolt
 import type { InkView } from './canvas/ink-view'
 import { inks, modes, type InputMode, type ProbeResult } from './domain/studio'
 import { readProbeResult } from './domain/probe'
-import { useTilt } from './composables/useTilt'
 import ToolButton from './components/ToolButton.vue'
 import Opening from './components/Opening.vue'
 import RenderLab from './components/RenderLab.vue'
@@ -15,6 +14,8 @@ const width = ref(402), height = ref(790)
 const opening = ref(true), playing = ref(!reducedMotion()), lab = ref(false), busy = ref(false)
 const selectedInk = ref(Math.max(0, Math.min(3, ApplicationSettings.getNumber('tinta.ink', 0))))
 const brush = ref(3.2), mode = ref<InputMode>('flow'), hint = ref('Let it wander. Or make your own mark.')
+const speeds = [1, 1.5, 2, 3]
+const speed = ref(1)
 const progress = ref(0), phase = ref('Ready'), result = ref<ProbeResult | null>(null)
 const canvasTop = 130
 const canvasHeight = computed(() => Math.max(200, height.value - 350))
@@ -23,7 +24,7 @@ const motion = motionScope()
 let ink: InkView | undefined, root: GridLayout | undefined
 let hintTimer: ReturnType<typeof setTimeout> | undefined
 let autoProbe: ReturnType<typeof setTimeout> | undefined
-const tilt = useTilt((x, y) => ink?.canvas.setGravityXY(x, y))
+let releaseSpeed: (() => void) | undefined
 function layout(event: EventData) {
   root = event.object as GridLayout
   const size = root.getActualSize()
@@ -31,10 +32,8 @@ function layout(event: EventData) {
 }
 function sync() {
   if (!ink) return
-  ink.canvas.mode = modes.indexOf(mode.value)
-  ink.canvas.brushWidth = brush.value
-  ink.canvas.running = playing.value && !opening.value && !lab.value && !busy.value
-  ink.setInk(inks[selectedInk.value]!.color)
+  const interactive = !opening.value && !lab.value && !busy.value
+  ink.configure(mode.value, playing.value && interactive, interactive, brush.value, inks[selectedInk.value]!.color, speed.value)
 }
 function readPerformance() {
   return { fps: ink?.canvas.callbackFPS ?? 0, rss: ink?.canvas.processRSSMiB ?? -1 }
@@ -61,12 +60,19 @@ function message(text: string) {
   hintTimer = setTimeout(() => { hint.value = 'Let it wander. Or make your own mark.' }, 3500)
 }
 function chooseMode(value: InputMode) {
-  if (value === 'tilt' && !tilt.start()) { message('Tilt needs a device. Try Touch or Flow here.'); return }
-  if (value !== 'tilt') tilt.stop()
+  if (value === 'tilt' && !ink?.tiltAvailable()) { message('Tilt needs a device. Try Touch or Flow here.'); return }
   mode.value = value; playing.value = true
 }
-function fromCanvas(event: EventData & { mode: number }) { mode.value = modes[event.mode]!; playing.value = true; tilt.stop() }
+function fromCanvas(event: EventData & { mode: number }) { mode.value = modes[event.mode]!; playing.value = true }
 function chooseInk(index: number) { selectedInk.value = index; ApplicationSettings.setNumber('tinta.ink', index) }
+function changeSpeed() {
+  speed.value = speeds[(speeds.indexOf(speed.value) + 1) % speeds.length]!
+  message(mode.value === 'touch' ? `Touch response · ${speed.value}×` : `Ink speed · ${speed.value}×`)
+}
+function speedReady(event: EventData) {
+  releaseSpeed?.()
+  releaseSpeed = motion.press(event.object as View, { scale: .9 })
+}
 function undo() { playing.value = false; message(ink?.canvas.undo() ? 'One step back.' : 'Draw a stroke or clear the paper first.') }
 function clear() { ink?.canvas.clearPaper(); message('A fresh sheet.') }
 function share() {
@@ -83,7 +89,7 @@ function share() {
 }
 function runProbe() {
   if (busy.value) return
-  lab.value = true; busy.value = true; result.value = null; progress.value = 0; phase.value = 'Warming up'; tilt.stop(); sync()
+  lab.value = true; busy.value = true; result.value = null; progress.value = 0; phase.value = 'Warming up'; sync()
   const directory = `${knownFolders.documents().path}/benchmarks`
   TintaRenderProbe.runInDirectoryProgressCompletion(directory, (frame, state) => {
     progress.value = frame; phase.value = state
@@ -93,7 +99,7 @@ function runProbe() {
   })
 }
 motion.use(() => onReducedMotion(value => { if (value) playing.value = false }))
-watch([mode, playing, opening, lab, busy, brush, selectedInk], sync)
+watch([mode, playing, opening, lab, busy, brush, selectedInk, speed], sync)
 onBeforeUnmount(() => { clearTimeout(hintTimer); clearTimeout(autoProbe); motion.dispose() })
 </script>
 
@@ -133,11 +139,14 @@ onBeforeUnmount(() => { clearTimeout(hintTimer); clearTimeout(autoProbe); motion
             </GridLayout>
             <ToolButton col="1" :icon="playing ? 'pause' : 'play'" :label="playing ? 'Pause ink' : 'Resume ink'" @tap="playing = !playing" verticalAlignment="center" />
           </GridLayout>
-          <GridLayout row="2" columns="*,44,44,44" rows="44">
+          <GridLayout row="2" columns="*,56,44,44,44" rows="44">
             <Label :text="inks[selectedInk]!.name" fontSize="11" color="#8A8C7F" verticalAlignment="center" />
-            <ToolButton col="1" icon="undo" label="Undo last stroke" background="transparent" @tap="undo" />
-            <ToolButton col="2" icon="clear" label="Clear paper" background="transparent" @tap="clear" />
-            <ToolButton col="3" icon="share" label="Export drawing" background="transparent" @tap="share" />
+            <GridLayout col="1" width="52" height="44" borderRadius="22" backgroundColor="#EAE8DF" @loaded="speedReady" @tap="changeSpeed" accessible="true" accessibilityRole="button" :accessibilityLabel="`Ink speed ${speed} times. Tap to change.`">
+              <Label :text="`${speed}×`" fontSize="12" fontWeight="600" textAlignment="center" verticalAlignment="center" />
+            </GridLayout>
+            <ToolButton col="2" icon="undo" label="Undo last stroke" background="transparent" @tap="undo" />
+            <ToolButton col="3" icon="clear" label="Clear paper" background="transparent" @tap="clear" />
+            <ToolButton col="4" icon="share" label="Export drawing" background="transparent" @tap="share" />
           </GridLayout>
         </GridLayout>
         <Label left="24" :top="height-28" :width="width-48" height="18" :text="hint" textAlignment="center" fontSize="10" color="#96988C" />

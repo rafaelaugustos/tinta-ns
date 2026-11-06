@@ -30,28 +30,38 @@ To select a simulator, use `npm run ios -- --device <udid>`. List simulators wit
 - **Flow** moves the bead along a repeating path.
 - **Touch** lets you drag anywhere on the paper. On the simulator, click and drag with the mouse.
 - **Tilt** uses the device's gravity sensor. It requires a physical device; use Flow or Touch on the simulator.
+- Tap **1×** beside undo to cycle through 1×, 1.5×, 2× and 3×. It changes Flow playback, Tilt acceleration and Touch response without speeding up the interface.
 - The four inks and three widths affect new marks. Existing ink stays on the sheet.
 - Pause holds the bead in place. Undo restores the state before the last touch stroke or clear; only one undo image is retained.
 - Export opens the iOS share sheet with the drawing as a PNG.
 
 ## Rendering and motion
 
-The studio interface is NativeScript-Vue. Jolt handles the opening timeline, control feedback, interface transitions, vector icons and gravity-sensor input. Sensor readings cross into the canvas at most about 30 times per second. No JavaScript frame loop draws the ink.
+The studio interface is NativeScript-Vue. Jolt drives the bead as well as the opening, controls, icons and transitions. The app imports the main package, `gestures`, `physics`, `sensors` and `shapes`.
 
-The app uses three Jolt entry points: the main package, `shapes` and `sensors`. In code, that means two timelines, spring transitions, press feedback, eight icon paths, gravity motion values, motion scopes and Reduce Motion handling. Rendering stays in the native canvas and probe described below.
+| Part | Implementation |
+| --- | --- |
+| Flow | The original curve's smoothing is solved ahead of time and passed to Jolt as native keyframes. A short entrance joins a closed, repeating path. |
+| Touch | A Jolt gesture surface feeds two native spring values bound to the bead's position. Release velocity carries into a bounded landing. |
+| Tilt | Jolt's gravity sensor supplies impulses to a one-body physics world. Jolt integrates motion and handles the paper's walls. |
+| Bead | Jolt gradient, vector highlight and contact spring, inside a NativeScript view with a shadow. |
+| Interface | Jolt timelines, spring transitions, press feedback, vector icons, motion scopes and Reduce Motion handling. |
 
-The canvas is a small native `UIView`. A `CADisplayLink` advances the bead and paints into a retained Core Graphics bitmap, capped at 2× display scale. The displayed image is replaced after a drawing update; previous frame images are released. Undo retains one image. The drawing does not keep an ever-growing list of paths or render snapshots.
+A small native contact observer supplies the initial absolute touch position, which RC.11's gesture values do not expose. It calls JavaScript once per contact. Pan updates and spring following stay native. Tilt sends sensor impulses through JavaScript at about 30 Hz; there is no JavaScript drawing loop.
 
-Flow and touch input share the same painter. Movement changes the stroke width, and a seeded generator adds small splashes. The bead uses native gradient and shadow layers. Backgrounding pauses drawing; Reduce Motion starts the studio paused and suppresses decorative entrance movement.
+Permanent ink lives in a retained Core Graphics bitmap, capped at 2× display scale. A native `CADisplayLink` reads the bead's presentation position and paints each segment. It no longer computes the bead's movement. The displayed image is replaced after a drawing update, previous images are released, and undo retains one image. Stroke count does not grow a list of paths or snapshots.
+
+Movement changes stroke width, and a seeded generator adds small splashes. Export reads the same bitmap. Backgrounding pauses motion and drawing; a settled Touch stroke stops the paint clock. Reduce Motion starts the studio paused and suppresses decorative entrance movement.
+
+Jolt's iOS shapes already use Core Graphics paths and Core Animation layers. The remaining bitmap painter handles accumulation, undo and PNG export; converting every permanent mark into an animated view would add resources without helping this drawing model.
 
 ```text
 src/
-  canvas/          Native canvas wrapper and Jolt icons
+  canvas/          Jolt motion/input, bitmap wrapper and vector icons
   components/      Studio controls, opening and render lab
-  composables/     Jolt gravity sensor lifecycle
-  domain/          Inks, modes and render-report validation
+  domain/          Flow curve, inks, modes and render-report validation
 App_Resources/
-  iOS/src/         Native painter and offscreen memory probe
+  iOS/src/         Bitmap painter, contact observer and offscreen memory probe
 scripts/           Native build runner, icon export and benchmark runner
 benchmarks/        Protocol and measured results
 ```

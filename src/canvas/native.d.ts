@@ -7,8 +7,10 @@ declare class TintaCanvas extends UIView {
   readonly callbackFPS: number
   readonly processRSSMiB: number
   inkColor: UIColor
-  modeChanged: ((mode: number) => void) | null
-  setGravityXY(x: number, y: number): void
+  trackedView: UIView | null
+  readonly currentPoint: CGPoint
+  resetTracking(): void
+  saveUndo(): void
   clearPaper(): void
   undo(): boolean
   exportPNG(): string
@@ -17,4 +19,9 @@ declare class TintaCanvas extends UIView {
 }
 declare class TintaRenderProbe extends NSObject {
   static runInDirectoryProgressCompletion(directory: string, progress: (frame: number, phase: string) => void, completion: (json: string) => void): void
+}
+
+declare class TintaContactObserver extends UIGestureRecognizer {
+  static attachToViewContact(view: UIView, contact: (x: number, y: number) => void): TintaContactObserver
+  dispose(): void
 }

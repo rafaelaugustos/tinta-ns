@@ -7,17 +7,17 @@
     CGImageRef _undoImage;
     CGSize _paperSize;
     CGFloat _pixelScale;
-    CGPoint _point, _previous, _target, _velocity, _gravity;
-    double _elapsed, _lastTimestamp;
+    CGPoint _point, _previous;
+    NSUInteger _idleFrames;
+    double _lastTimestamp;
     NSUInteger _metricFrames;
     double _metricSeconds, _callbackFPS;
-    BOOL _touching, _foreground, _capturing;
+    BOOL _foreground, _capturing, _tracking;
     NSUInteger _captureFrames;
     double _captureSeconds, _captureMaxGap, _capturePaintMs;
     uint32_t _random;
 }
 @property(nonatomic, strong) CALayer *paperLayer;
-@property(nonatomic, strong) CAGradientLayer *bead;
 @property(nonatomic, strong) CADisplayLink *clock;
 @property(nonatomic, strong) NSMutableArray *captureSamples;
 @end
@@ -32,16 +32,6 @@
         _inkColor = [UIColor colorWithRed:.133 green:.196 blue:.91 alpha:1];
         _running = YES; _foreground = YES; _random = 71;
         _paperLayer = [CALayer layer]; [self.layer addSublayer:_paperLayer];
-        _bead = [CAGradientLayer layer];
-        _bead.bounds = CGRectMake(0, 0, 30, 30); _bead.cornerRadius = 15;
-        _bead.startPoint = CGPointMake(.15, .05); _bead.endPoint = CGPointMake(.8, 1);
-        _bead.shadowColor = UIColor.blackColor.CGColor; _bead.shadowOpacity = .2;
-        _bead.shadowOffset = CGSizeMake(0, 5); _bead.shadowRadius = 5;
-        [self.layer addSublayer:_bead];
-        CALayer *shine = [CALayer layer]; shine.frame = CGRectMake(7, 5, 8, 4);
-        shine.cornerRadius = 2; shine.backgroundColor = [UIColor colorWithWhite:1 alpha:.65].CGColor;
-        shine.transform = CATransform3DMakeRotation(-.55, 0, 0, 1); [_bead addSublayer:shine];
-        [self updateInk];
         [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(suspend) name:UIApplicationDidEnterBackgroundNotification object:nil];
         [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(resume) name:UIApplicationWillEnterForegroundNotification object:nil];
     }
@@ -76,8 +66,9 @@
         CGContextSaveGState(_paper); CGContextTranslateCTM(_paper, 0, size.height); CGContextScaleCTM(_paper, 1, -1);
         CGContextDrawImage(_paper, self.bounds, old); CGContextRestoreGState(_paper); CGImageRelease(old);
     }
-    _point = _previous = CGPointMake(size.width * .3, size.height * .5); _target = _point;
-    [CATransaction begin]; [CATransaction setDisableActions:YES]; _paperLayer.frame = self.bounds; _bead.position = _point; [CATransaction commit];
+    _point = _previous = CGPointMake(size.width * .3, size.height * .5);
+    _tracking = NO;
+    [CATransaction begin]; [CATransaction setDisableActions:YES]; _paperLayer.frame = self.bounds; [CATransaction commit];
     [self presentPaper];
 }
 - (void)fillPaper {
@@ -87,20 +78,23 @@
     for (CGFloat x = 18; x < _paperSize.width; x += 24)
         for (CGFloat y = 18; y < _paperSize.height; y += 24) CGContextFillEllipseInRect(_paper, CGRectMake(x, y, .8, .8));
 }
-- (void)setInkColor:(UIColor *)color { _inkColor = color; [self updateInk]; }
-- (void)updateInk {
-    CGFloat r=0,g=0,b=0,a=1; [_inkColor getRed:&r green:&g blue:&b alpha:&a];
-    [CATransaction begin]; [CATransaction setDisableActions:YES];
-    _bead.colors = @[(id)[UIColor colorWithRed:MIN(1,r+.25) green:MIN(1,g+.25) blue:MIN(1,b+.15) alpha:1].CGColor, (id)_inkColor.CGColor, (id)[UIColor colorWithRed:r*.5 green:g*.5 blue:b*.6 alpha:1].CGColor];
-    _bead.locations = @[@0, @.45, @1]; [CATransaction commit];
+- (void)setMode:(NSInteger)mode { _mode = MAX(0,MIN(2,mode)); [self resetTracking]; }
+- (void)setRunning:(BOOL)running {
+    if (running && !_running) _tracking = NO;
+    _running = running; _lastTimestamp = 0; _idleFrames = 0; [self updateClock];
 }
-- (void)setMode:(NSInteger)mode { _mode = MAX(0,MIN(2,mode)); _velocity = CGPointZero; _lastTimestamp = 0; [self updateClock]; }
-- (void)setRunning:(BOOL)running { _running = running; _lastTimestamp = 0; [self updateClock]; }
-- (void)setGravityX:(double)x y:(double)y { _gravity = CGPointMake(x, y); }
+- (CGPoint)currentPoint {
+    CALayer *layer = self.trackedView.layer.presentationLayer ?: self.trackedView.layer;
+    if (!layer) return _point;
+    return CGPointMake(layer.position.x + layer.transform.m41, layer.position.y + layer.transform.m42);
+}
+- (void)resetTracking {
+    _point = _previous = self.currentPoint; _tracking = NO; _lastTimestamp = 0; _idleFrames = 0; [self updateClock];
+}
 - (void)suspend { _foreground = NO; [self updateClock]; }
-- (void)resume { _foreground = YES; _lastTimestamp = 0; [self updateClock]; }
+- (void)resume { _foreground = YES; _tracking = NO; _lastTimestamp = 0; [self updateClock]; }
 - (void)updateClock {
-    _clock.paused = !_foreground || !_running || !self.window || (_mode == 1 && !_touching && hypot(_velocity.x,_velocity.y) < 1);
+    _clock.paused = !_foreground || !_running || !self.window || (_mode == 1 && _idleFrames >= 15);
     if (_clock.paused || !_clock) {
         _metricFrames = 0; _metricSeconds = 0; _callbackFPS = 0;
     }
@@ -123,28 +117,17 @@
         double began = CACurrentMediaTime();
         double interval = _lastTimestamp ? clock.timestamp - _lastTimestamp : 1./60.;
         double dt = _lastTimestamp ? MIN(.033, clock.timestamp - _lastTimestamp) : 1./60.;
-        _lastTimestamp = clock.timestamp; _elapsed += dt; _previous = _point;
+        _lastTimestamp = clock.timestamp; _previous = _point;
         _metricFrames++; _metricSeconds += interval;
         if (_metricSeconds >= 1) {
             _callbackFPS = _metricFrames / _metricSeconds;
             _metricFrames = 0; _metricSeconds = 0;
         }
-        CGFloat w = _paperSize.width, h = _paperSize.height;
-        if (_mode == 0) {
-            double t = _elapsed * .63;
-            CGPoint destination = CGPointMake(w * (.5 + .36*sin(t) + .035*sin(t*3)), h * (.5 + .31*sin(t*1.7+.4)));
-            _point.x += (destination.x-_point.x) * MIN(1,dt*7);
-            _point.y += (destination.y-_point.y) * MIN(1,dt*7);
-        } else if (_touching) {
-            _velocity = CGPointMake((_target.x-_point.x)*18, (_target.y-_point.y)*18);
-            _point.x += _velocity.x*dt; _point.y += _velocity.y*dt;
-        } else {
-            if (_mode == 2) { _velocity.x += _gravity.x*110*dt; _velocity.y -= _gravity.y*110*dt; }
-            double damping = exp(-dt*1.8); _velocity.x *= damping; _velocity.y *= damping;
-            _point.x += _velocity.x*dt; _point.y += _velocity.y*dt;
-        }
-        if (_point.x<16 || _point.x>w-16) { _point.x=MAX(16,MIN(w-16,_point.x)); _velocity.x *= -.65; }
-        if (_point.y<16 || _point.y>h-16) { _point.y=MAX(16,MIN(h-16,_point.y)); _velocity.y *= -.65; }
+        // Jolt owns the visible sphere. This view only rasterizes its presentation.
+        _point = self.currentPoint;
+        // A new layout or resumed animation needs one committed presentation
+        // sample before it can form a segment with the next frame.
+        if (!_tracking) { _previous = _point; _tracking = YES; }
         double distance = hypot(_point.x-_previous.x,_point.y-_previous.y);
         if (distance > .08) {
             CGFloat speed = distance/dt, thickness = _brushWidth * (1.25-MIN(.65,speed/900));
@@ -158,8 +141,8 @@
             }
             [self presentPaper];
         }
-        [CATransaction begin]; [CATransaction setDisableActions:YES]; _bead.position = _point; [CATransaction commit];
-        if (_mode==1 && !_touching && hypot(_velocity.x,_velocity.y)<1) [self updateClock];
+        _idleFrames = distance < .01 ? _idleFrames + 1 : 0;
+        if (_mode == 1 && _idleFrames >= 15) [self updateClock];
         if (_capturing) {
             _captureFrames++; _captureSeconds += interval;
             _captureMaxGap = MAX(_captureMaxGap,interval*1000);
@@ -179,15 +162,6 @@
     [CATransaction begin]; [CATransaction setDisableActions:YES]; _paperLayer.contents = (__bridge id)image; [CATransaction commit];
     CGImageRelease(image);
 }
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    if (!_paper) return;
-    [self saveUndo];
-    if (_mode!=1) { self.mode=1; if (_modeChanged) _modeChanged(1); }
-    _target = [touches.anyObject locationInView:self]; _touching = YES; self.running=YES;
-}
-- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event { _target = [touches.anyObject locationInView:self]; }
-- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event { _touching=NO; [self updateClock]; }
-- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event { _touching=NO; _velocity=CGPointZero; [self updateClock]; }
 - (void)clearPaper { if (!_paper) return; [self saveUndo]; [self fillPaper]; [self presentPaper]; }
 - (BOOL)undo {
     if (!_undoImage || !_paper) return NO;
@@ -210,12 +184,12 @@
 }
 - (void)finishCapture {
     _capturing=NO;
-    NSDictionary *result=@{@"frames":@(_captureFrames),@"seconds":@(_captureSeconds),@"uiCallbackHz":@(_captureFrames/_captureSeconds),@"maximumCallbackGapMs":@(_captureMaxGap),@"meanNativeCallbackMs":@(_capturePaintMs/_captureFrames),@"samples":_captureSamples,@"pixelWidth":@(CGBitmapContextGetWidth(_paper)),@"pixelHeight":@(CGBitmapContextGetHeight(_paper)),@"mode":@(_mode),@"pid":@(NSProcessInfo.processInfo.processIdentifier)};
+    NSDictionary *result=@{@"motionEngine":@"Jolt RC.11",@"frames":@(_captureFrames),@"seconds":@(_captureSeconds),@"uiCallbackHz":@(_captureFrames/_captureSeconds),@"maximumCallbackGapMs":@(_captureMaxGap),@"meanNativeCallbackMs":@(_capturePaintMs/_captureFrames),@"samples":_captureSamples,@"pixelWidth":@(CGBitmapContextGetWidth(_paper)),@"pixelHeight":@(CGBitmapContextGetHeight(_paper)),@"mode":@(_mode),@"pid":@(NSProcessInfo.processInfo.processIdentifier)};
     NSString *directory=[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES).firstObject stringByAppendingPathComponent:@"benchmarks"];
     [NSFileManager.defaultManager createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
     NSData *json=[NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];
     [json writeToFile:[directory stringByAppendingPathComponent:@"canvas-cadence.json"] atomically:YES];
 }
-- (void)shutdown { [_clock invalidate]; _clock=nil; _modeChanged=nil; [NSNotificationCenter.defaultCenter removeObserver:self]; }
+- (void)shutdown { [_clock invalidate]; _clock=nil; self.trackedView=nil; [NSNotificationCenter.defaultCenter removeObserver:self]; }
 - (void)dealloc { [NSNotificationCenter.defaultCenter removeObserver:self]; if (_paper) CGContextRelease(_paper); if (_undoImage) CGImageRelease(_undoImage); }
 @end
