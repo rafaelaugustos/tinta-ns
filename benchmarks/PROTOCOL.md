@@ -22,7 +22,7 @@ The callback rate is **UI scheduling cadence**, not GPU presentation FPS. The ca
 
 ## Reproduce
 
-Build and install the app first. Each run starts a fresh process; the script checks the report's PID and modification time so it cannot accept an old result.
+Build and install the app first. Each run starts a fresh process; the script requires a changed report with the launched process's PID, and refuses to overwrite recorded runs.
 
 ```sh
 npm run build:ios
@@ -35,3 +35,20 @@ npm run benchmark -- <udid> --kind cadence --runs 3
 The no-blur control is expected to fail pixel validation. The command treats that failure as the expected control result; it does not turn it into a passing render report.
 
 Reports are written to `Documents/benchmarks` inside the app and copied to `benchmarks/results` by the runner. Keep the build configuration, OS, simulator/device, source revision and background workload alongside any published results. A simulator run says nothing about physical-device battery use or Apple Pencil input latency.
+
+## Physical iPhone
+
+Sign a Release build with your development team, install it, and leave the phone unlocked with Tinta in the foreground:
+
+```sh
+npm run ios -- --device <iphone-udid> --release --team-id <team-id>
+npm run benchmark -- <iphone-udid> --device --runs 3 --output benchmarks/iphone
+npm run benchmark -- <iphone-udid> --device --kind no-blur --runs 1 --output benchmarks/iphone
+npm run benchmark -- <iphone-udid> --device --kind cadence --runs 3 --output benchmarks/iphone
+```
+
+The device runner uses Xcode's `devicectl` to launch the app and copy its reports. After launch it waits until the expected finish window before reading files. Keep results from different OS versions and build configurations in separate directories.
+
+New builds also record `task_vm_info.phys_footprint`, with the same settled-median procedure as RSS. The two metrics have different accounting and must be reported separately. These in-process footprint readings are not an Instruments trace. Unavailable footprint readings are marked explicitly; they do not affect the RSS gate. The original simulator reports predate this additional metric.
+
+The reference PR also tested an iPhone 15 Pro in Release on iOS 27.0. Both its base and fixed workers showed about +2.4 MiB of settled physical-footprint growth in Instruments. That device run did not reproduce the simulator leak or demonstrate a hardware memory reduction.

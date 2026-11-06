@@ -8,10 +8,28 @@ static double residentMiB(void) {
     mach_task_basic_info_data_t info; mach_msg_type_number_t count=MACH_TASK_BASIC_INFO_COUNT;
     return task_info(mach_task_self(),MACH_TASK_BASIC_INFO,(task_info_t)&info,&count)==KERN_SUCCESS ? info.resident_size/1048576. : -1;
 }
-static double settledRSS(void) {
-    double samples[7]; for(int i=0;i<7;i++){samples[i]=residentMiB();[NSThread sleepForTimeInterval:.12];}
-    for(int i=0;i<7;i++)for(int j=i+1;j<7;j++)if(samples[j]<samples[i]){double tmp=samples[i];samples[i]=samples[j];samples[j]=tmp;}
-    return samples[3];
+static double physicalFootprintMiB(void) {
+    task_vm_info_data_t info;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    kern_return_t status = task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&info, &count);
+    if (status != KERN_SUCCESS || count < TASK_VM_INFO_REV1_COUNT) return -1;
+    return info.phys_footprint / 1048576.;
+}
+
+static NSDictionary *settledMemory(void) {
+    NSMutableArray<NSNumber *> *rss = [NSMutableArray array];
+    NSMutableArray<NSNumber *> *footprint = [NSMutableArray array];
+    NSMutableArray *samples = [NSMutableArray array];
+    for (int i = 0; i < 7; i++) {
+        NSNumber *resident = @(residentMiB()), *physical = @(physicalFootprintMiB());
+        [rss addObject:resident];
+        [footprint addObject:physical];
+        [samples addObject:@{@"rssMiB":resident, @"physicalFootprintMiB":physical}];
+        [NSThread sleepForTimeInterval:.12];
+    }
+    [rss sortUsingSelector:@selector(compare:)];
+    [footprint sortUsingSelector:@selector(compare:)];
+    return @{@"rssMiB":rss[3], @"physicalFootprintMiB":footprint[3], @"samples":samples};
 }
 @implementation TintaRenderProbe
 + (void)runInDirectory:(NSString *)directory progress:(void (^)(NSInteger, NSString *))progress completion:(void (^)(NSString *))completion {
@@ -52,7 +70,8 @@ static double settledRSS(void) {
             dispatch_async(dispatch_get_main_queue(),^{progress(0,@"warmup");});
             for(NSInteger frame=0;frame<60;frame++)render(frame,NO);
             [NSThread sleepForTimeInterval:2];
-            double before=settledRSS(), peak=before;
+            NSDictionary *baseline=settledMemory();
+            double before=[baseline[@"rssMiB"] doubleValue], peak=before;
             NSTimeInterval started=NSProcessInfo.processInfo.systemUptime;
             for(NSInteger frame=0;frame<frames;frame++){
                 render(frame,frame<2 || frame==frames-1);
@@ -61,8 +80,11 @@ static double settledRSS(void) {
             }
             dispatch_async(dispatch_get_main_queue(),^{progress(frames,@"settling");});
             [NSThread sleepForTimeInterval:2];
-            double after=settledRSS();
-            NSDictionary *result=@{@"schema":@1,@"renderer":@"Core Image",@"frames":@(frames),@"warmupFrames":@60,@"width":@(size),@"height":@(size),@"blurRadius":@(skipBlur?0:4),@"checks":checks,@"intervalMs":@150,@"pixelsValid":@(pixelsValid),@"baselineRSSMiB":@(before),@"settledRSSMiB":@(after),@"growthMiB":@(after-before),@"peakRSSMiB":@(peak),@"elapsedSeconds":@(NSProcessInfo.processInfo.systemUptime-started),@"samples":samples,@"os":NSProcessInfo.processInfo.operatingSystemVersionString,@"pid":@(NSProcessInfo.processInfo.processIdentifier),@"passed":@(pixelsValid && before>=0 && after-before<=30)};
+            NSDictionary *settled=settledMemory();
+            double after=[settled[@"rssMiB"] doubleValue];
+            double footprintBefore=[baseline[@"physicalFootprintMiB"] doubleValue];
+            double footprintAfter=[settled[@"physicalFootprintMiB"] doubleValue];
+            NSDictionary *result=@{@"schema":@1,@"baselineMemorySamples":baseline[@"samples"],@"settledMemorySamples":settled[@"samples"],@"baselinePhysicalFootprintMiB":@(footprintBefore),@"settledPhysicalFootprintMiB":@(footprintAfter),@"physicalFootprintGrowthMiB":@(footprintAfter-footprintBefore),@"physicalFootprintAvailable":@(footprintBefore>=0 && footprintAfter>=0),@"renderer":@"Core Image",@"frames":@(frames),@"warmupFrames":@60,@"width":@(size),@"height":@(size),@"blurRadius":@(skipBlur?0:4),@"checks":checks,@"intervalMs":@150,@"pixelsValid":@(pixelsValid),@"baselineRSSMiB":@(before),@"settledRSSMiB":@(after),@"growthMiB":@(after-before),@"peakRSSMiB":@(peak),@"elapsedSeconds":@(NSProcessInfo.processInfo.systemUptime-started),@"samples":samples,@"os":NSProcessInfo.processInfo.operatingSystemVersionString,@"pid":@(NSProcessInfo.processInfo.processIdentifier),@"passed":@(pixelsValid && before>=0 && after-before<=30)};
             NSData *json=[NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];
             [NSFileManager.defaultManager createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil];
             [json writeToFile:[directory stringByAppendingPathComponent:@"render-probe.json"] atomically:YES];
