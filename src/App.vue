@@ -54,6 +54,7 @@ async function enter() {
   sync()
   if (NSProcessInfo.processInfo.arguments.containsObject('--tinta-probe')) autoProbe = setTimeout(runProbe, 2500)
   if (NSProcessInfo.processInfo.arguments.containsObject('--tinta-cadence')) autoProbe = setTimeout(() => ink?.canvas.beginCapture(), 3000)
+  if (NSProcessInfo.processInfo.arguments.containsObject('--tinta-check-tilt')) autoProbe = setTimeout(() => ink?.checkTilt(), 2500)
 }
 function message(text: string) {
   clearTimeout(hintTimer); hint.value = text

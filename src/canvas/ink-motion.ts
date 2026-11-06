@@ -1,4 +1,4 @@
-import { Color, GridLayout } from '@nativescript/core'
+import { Color, File, Folder, GridLayout, knownFolders } from '@nativescript/core'
 import { bind, motionScope, set, springValue, type PlaybackAnimation, type SpringValue } from '@rafaelaugusto/jolt'
 import { gestures, type GestureSurface, type Gestures } from '@rafaelaugusto/jolt/gestures'
 import { physicsWorld, type PhysicsWorld } from '@rafaelaugusto/jolt/physics'
@@ -15,7 +15,7 @@ export class InkMotion {
   private flow?: PlaybackAnimation
   private world?: PhysicsWorld
   private gravity?: GravitySensor
-  private releaseGravity?: () => void
+  private releaseTilt?: () => void
   private followers: SpringValue[] = []
   private unbind?: () => void
   private generation = 0
@@ -85,6 +85,7 @@ export class InkMotion {
     this.flow?.stop(); this.flow = undefined
     this.unbind?.(); this.unbind = undefined
     this.followers.forEach(value => value.dispose()); this.followers = []
+    this.releaseTilt?.(); this.releaseTilt = undefined
     this.gravity?.pause()
     this.world?.dispose(); this.world = undefined
     this.place(point)
@@ -161,18 +162,52 @@ export class InkMotion {
   tiltAvailable() {
     if (!this.gravity) {
       this.gravity = sensor('gravity', { interval: 32, reducedMotion: 'continue', scope: this.scope })
-      let previous = -Infinity
-      this.releaseGravity = this.gravity.x.subscribe((x, time) => {
-        const elapsed = time - previous
-        if (elapsed < 32) return
-        previous = time
-        if (!this.running || this.mode !== 'tilt' || !this.world) return
-        const dt = Number.isFinite(elapsed) ? Math.min(.05, elapsed / 1000) : .032
-        this.world.impulse('ink', { x: x * 110 * this.speed * dt, y: -this.gravity!.y.get() * 110 * this.speed * dt })
-      })
       this.gravity.pause()
     }
     return this.gravity.available
+  }
+
+  private startTilt() {
+    this.gravity?.play()
+    if (this.releaseTilt || !this.gravity) return
+    this.releaseTilt = this.scope.use(() => {
+      let x = 0, y = 0, previous = CACurrentMediaTime()
+      const releaseX = this.gravity!.x.subscribe(value => { x = value })
+      const releaseY = this.gravity!.y.subscribe(value => { y = value })
+      // RC.11 has impulses but no changing world-gravity input. Keep applying
+      // the held acceleration even when a sensor axis reports the same value.
+      const timer = setInterval(() => {
+        const now = CACurrentMediaTime(), dt = Math.min(.05, now - previous)
+        previous = now
+        this.world?.impulse('ink', { x: x * 110 * this.speed * dt, y: -y * 110 * this.speed * dt })
+      }, 32)
+      return () => { clearInterval(timer); releaseX(); releaseY() }
+    })
+  }
+
+  async checkTilt() {
+    const { replaySensor } = await import('@rafaelaugusto/jolt/testing')
+    const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
+    const directory = Folder.fromPath(`${knownFolders.documents().path}/benchmarks`)
+    const report: Record<string, unknown> = { synthetic: true, pid: NSProcessInfo.processInfo.processIdentifier }
+    try {
+      this.setMode('tilt'); this.setRunning(true)
+      const start = this.world!.snapshot().bodies[0]!
+      // X stays exactly zero: gravity must keep accelerating Y without X events.
+      replaySensor(this.gravity!, [{ time: 0, values: [0, -4, -8.95] }, { time: 2000, values: [0, -4, -8.95] }])
+      await wait(900)
+      const moving = this.world!.snapshot().bodies[0]!
+      this.setRunning(false)
+      const paused = this.world!.snapshot().bodies[0]!
+      await wait(300)
+      const held = this.world!.snapshot().bodies[0]!
+      Object.assign(report, { start, moving, paused, held, passed: moving.y > start.y + 30 && Math.abs(moving.x - start.x) < 1 && Math.hypot(held.x - paused.x, held.y - paused.y) < .01 })
+    } catch (error) {
+      Object.assign(report, { passed: false, error: String(error) })
+    } finally {
+      File.fromPath(`${directory.path}/tilt-check.json`).writeTextSync(JSON.stringify(report, null, 2))
+      this.setMode('flow'); this.setRunning(true)
+    }
   }
 
   setRunning(value: boolean) { this.running = value; this.applyRunning() }
@@ -195,8 +230,9 @@ export class InkMotion {
     if (this.running) {
       if (this.mode === 'flow' && !this.flow) this.startFlow(this.position())
       this.flow?.play(); this.followers.forEach(value => value.play()); this.world?.play()
-      if (this.mode === 'tilt') { this.tiltAvailable(); this.gravity?.play() }
+      if (this.mode === 'tilt') { this.tiltAvailable(); this.startTilt() }
     } else {
+      this.releaseTilt?.(); this.releaseTilt = undefined
       this.flow?.pause(); this.followers.forEach(value => value.pause()); this.world?.pause(); this.gravity?.pause()
     }
   }
@@ -215,7 +251,7 @@ export class InkMotion {
   dispose() {
     if (this.disposed) return
     this.disposed = true; this.contact.dispose(); this.input.dispose()
-    this.stopDriver(); this.releaseGravity?.(); this.scope.dispose()
+    this.stopDriver(); this.scope.dispose()
     this.paper.trackedView = null
   }
 }

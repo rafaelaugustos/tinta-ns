@@ -47,7 +47,7 @@ The studio interface is NativeScript-Vue. Jolt drives the bead as well as the op
 | Bead | Jolt gradient, vector highlight and contact spring, inside a NativeScript view with a shadow. |
 | Interface | Jolt timelines, spring transitions, press feedback, vector icons, motion scopes and Reduce Motion handling. |
 
-A small native contact observer supplies the initial absolute touch position, which RC.11's gesture values do not expose. It calls JavaScript once per contact. Pan updates and spring following stay native. Tilt sends sensor impulses through JavaScript at about 30 Hz; there is no JavaScript drawing loop.
+A small native contact observer supplies the initial absolute touch position, which RC.11's gesture values do not expose. It calls JavaScript once per contact. Pan updates and spring following stay native. Tilt holds the latest sensor values and sends impulses through JavaScript at about 30 Hz, including while the phone holds a steady angle. That feed stops when paused or backgrounded. There is no JavaScript drawing loop.
 
 Permanent ink lives in a retained Core Graphics bitmap, capped at 2× display scale. A native `CADisplayLink` reads the bead's presentation position and paints each segment. It no longer computes the bead's movement. The displayed image is replaced after a drawing update, previous images are released, and undo retains one image. Stroke count does not grow a list of paths or snapshots.
 

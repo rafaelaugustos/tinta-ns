@@ -52,6 +52,7 @@ export class InkView extends GestureSurface {
     this.motion.setRunning(running)
   }
   tiltAvailable() { return this.motion?.tiltAvailable() ?? false }
+  checkTilt() { return this.motion?.checkTilt() }
   override onLoaded() { super.onLoaded(); this.prepareMotion() }
   override onUnloaded() {
     if (!Application.suspended) {
