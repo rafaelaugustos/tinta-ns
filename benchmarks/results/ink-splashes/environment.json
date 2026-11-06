@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-06",
+  "sourceCommit": "bf3444da91655cb74fdfad06bbf1ca4b00d64f25",
+  "configuration": "Release",
+  "jolt": "0.1.0-rc.11",
+  "speed": 1,
+  "viewportPoints": [
+    402,
+    874
+  ],
+  "bitmapPixels": [
+    804,
+    1748
+  ],
+  "simulator": {
+    "model": "iPhone 17 Pro",
+    "runtime": "iOS 27.0 (24A434)",
+    "udid": "355339A9-87AF-4905-A9A8-8298CBACABCB"
+  },
+  "binarySHA256": {
+    "simulator": "430106f2f467cef15c4740de732dde019c35821af530e7a5b88e7ca953cefdd0",
+    "iphone": "03dc217d1811dc697ceab213390f5d9fc1c23769c33dfc88463cd1f65c782594"
+  },
+  "notes": [
+    "One fresh-process simulator cadence run. No screen recording, build or video conversion ran during measurement.",
+    "Host load was not isolated. A physical-device launch attempt overlapped the simulator capture; it was rejected because the iPhone was locked."
+  ],
+  "iphoneInstall": "Signed build installed on iPhone 17 Pro. Automatic launch was unavailable because the phone was locked."
+}

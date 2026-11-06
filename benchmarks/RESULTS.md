@@ -1,5 +1,11 @@
 # Measured results
 
+## Ink splashes
+
+Release build `bf3444d` places groups of two or three drops along the stroke, with varied sizes and more spread at higher speeds. The drops are painted into the retained bitmap. A fresh-process simulator run at 1× Flow recorded 1,800 UI callbacks over 30 seconds: 60.00/s, a 16.67 ms maximum interval, 0.23 ms mean painter work and sampled RSS of 328.73–335.88 MiB.
+
+The viewport and bitmap match the full-screen run below. No build, recording or video conversion ran during capture; host load was not isolated. This checks UI callback cadence with the denser ink, not GPU presentation. [Raw report](results/ink-splashes/simulator/cadence-1.json) · [Build metadata](results/ink-splashes/environment.json).
+
 ## Full-screen canvas
 
 Release build `915fa5b` expands the paper to the display and lets the bead travel beyond its edges. One fresh-process simulator run used a 402 × 874 point viewport, an 804 × 1748 bitmap, default 1× Flow and visible FPS/RSS labels.

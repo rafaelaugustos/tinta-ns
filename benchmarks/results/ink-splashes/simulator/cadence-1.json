@@ -1,0 +1,134 @@
+{
+  "frames": 1800,
+  "motionEngine": "Jolt RC.11",
+  "maximumCallbackGapMs": 16.666666691889986,
+  "samples": [
+    {
+      "seconds": 1,
+      "rssMiB": 335.875
+    },
+    {
+      "seconds": 2,
+      "rssMiB": 335.875
+    },
+    {
+      "seconds": 3,
+      "rssMiB": 335.875
+    },
+    {
+      "seconds": 4,
+      "rssMiB": 335.875
+    },
+    {
+      "seconds": 5,
+      "rssMiB": 335.84375
+    },
+    {
+      "seconds": 6,
+      "rssMiB": 335.796875
+    },
+    {
+      "seconds": 7,
+      "rssMiB": 335.796875
+    },
+    {
+      "seconds": 8,
+      "rssMiB": 335.796875
+    },
+    {
+      "seconds": 9,
+      "rssMiB": 335.796875
+    },
+    {
+      "seconds": 10,
+      "rssMiB": 335.796875
+    },
+    {
+      "seconds": 11,
+      "rssMiB": 335.75
+    },
+    {
+      "seconds": 12,
+      "rssMiB": 335.734375
+    },
+    {
+      "seconds": 13,
+      "rssMiB": 335.734375
+    },
+    {
+      "seconds": 14,
+      "rssMiB": 335.734375
+    },
+    {
+      "seconds": 15,
+      "rssMiB": 335.734375
+    },
+    {
+      "seconds": 16,
+      "rssMiB": 335.734375
+    },
+    {
+      "seconds": 17,
+      "rssMiB": 335.6875
+    },
+    {
+      "seconds": 18,
+      "rssMiB": 335.6875
+    },
+    {
+      "seconds": 19,
+      "rssMiB": 335.6875
+    },
+    {
+      "seconds": 20,
+      "rssMiB": 335.6875
+    },
+    {
+      "seconds": 21,
+      "rssMiB": 335.6875
+    },
+    {
+      "seconds": 22,
+      "rssMiB": 335.6875
+    },
+    {
+      "seconds": 23,
+      "rssMiB": 329.796875
+    },
+    {
+      "seconds": 24,
+      "rssMiB": 328.734375
+    },
+    {
+      "seconds": 25,
+      "rssMiB": 328.796875
+    },
+    {
+      "seconds": 26,
+      "rssMiB": 328.8125
+    },
+    {
+      "seconds": 27,
+      "rssMiB": 328.8125
+    },
+    {
+      "seconds": 28,
+      "rssMiB": 328.8125
+    },
+    {
+      "seconds": 29,
+      "rssMiB": 328.8125
+    },
+    {
+      "seconds": 30,
+      "rssMiB": 328.8125
+    }
+  ],
+  "mode": 0,
+  "pixelHeight": 1748,
+  "meanNativeCallbackMs": 0.23304893539817487,
+  "pid": 56360,
+  "seconds": 30,
+  "pixelWidth": 804,
+  "uiCallbackHz": 60
+}
