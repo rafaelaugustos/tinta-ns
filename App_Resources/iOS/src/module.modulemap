@@ -1,0 +1,4 @@
+module TintaDrawing {
+    header "TintaCanvas.h"
+    export *
+}

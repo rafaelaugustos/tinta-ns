@@ -1,0 +1,37 @@
+# iOS render checks
+
+These are two separate workloads. Neither reports hardware presentation FPS or establishes a framework ranking.
+
+## Offscreen memory
+
+The workload follows the shape of [tgfx PR #19](https://github.com/margelo/react-native-tgfx/pull/19): 450 renders at 512 × 512, a changing RGBA upload, a Gaussian blur with radius 4, an alternating red rectangle, synchronous pixel readback, and 150 ms between renders. Frames 0, 1 and 449 check the rectangle, uploaded blue channel and blurred boundary. Bypassing blur must fail the boundary assertion.
+
+Tinta uses Core Image for this probe. It retains one `CIContext`, two 1 MiB CPU buffers, and drains an autorelease pool after every render. The context's intermediate cache is disabled. The native worker owns its input through synchronous readback before reusing the buffer.
+
+There are 60 warmup renders. After a two-second wait, seven RSS readings are taken 120 ms apart; their median is the baseline. After the 450 measured renders, the same wait and sampling procedure gives the settled RSS. The context and buffers remain alive for both measurements. The sampled peak is taken every 15 renders and is not a high-frequency peak measurement. Reports include every sampled value, pixel checks and the process ID.
+
+RSS comes from `mach_task_basic_info.resident_size`, in MiB. It includes the entire process, not just GPU memory. The drawing canvas is paused while this test runs. The growth gate is 30 MiB, matching the gate described in the tgfx PR. Passing that gate does not establish that memory use is lower than tgfx.
+
+The renderer, warmup, filtering implementation and measurement method differ from the tgfx harness. A direct comparison requires running both pinned implementations on the same simulator or device with the same protocol. The supplied Tilt Pen clip is an app demonstration on an earlier tgfx build, separate from its 450-render regression test. Its absolute RSS figures cannot be compared directly to this app's footprint.
+
+## Drawing cadence
+
+A second run measures 30 seconds of the app's automatic ink flow. A native `CADisplayLink` updates the bead and paints into a retained Core Graphics bitmap. The report records callback count, elapsed callback intervals, maximum gap, mean time spent inside the native callback, and process RSS sampled every 60 callbacks.
+
+The callback rate is **UI scheduling cadence**, not GPU presentation FPS. The callback duration includes CPU drawing/submission, not asynchronous GPU completion. Capture this run separately from screen recording.
+
+## Reproduce
+
+Build and install the app first. Each run starts a fresh process; the script checks the report's PID and modification time so it cannot accept an old result.
+
+```sh
+npm run build:ios
+xcrun simctl install <udid> platforms/ios/build/Debug-iphonesimulator/tinta.app
+npm run benchmark -- <udid> --runs 3
+npm run benchmark -- <udid> --kind no-blur --runs 1
+npm run benchmark -- <udid> --kind cadence --runs 3
+```
+
+The no-blur control is expected to fail pixel validation. The command treats that failure as the expected control result; it does not turn it into a passing render report.
+
+Reports are written to `Documents/benchmarks` inside the app and copied to `benchmarks/results` by the runner. Keep the build configuration, OS, simulator/device, source revision and background workload alongside any published results. A simulator run says nothing about physical-device battery use or Apple Pencil input latency.

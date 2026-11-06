@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "types": ["node", "@nativescript/types"],
+    "paths": { "vue": ["./node_modules/nativescript-vue"] }
+  },
+  "vueCompilerOptions": { "target": 3, "lib": "nativescript-vue" },
+  "include": ["src", "nativescript.config.ts"]
+}
