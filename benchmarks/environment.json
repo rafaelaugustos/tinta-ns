@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "691f30b",
+  "configuration": "Debug",
+  "simulator": "iPhone 17 Pro",
+  "runtime": "iOS 27.0 (24A434)",
+  "simulatorUDID": "355339A9-87AF-4905-A9A8-8298CBACABCB",
+  "nativeScript": "9.1.3",
+  "nativeScriptVue": "3.1.3",
+  "jolt": "0.1.0-rc.11",
+  "binarySHA256": "f388bc5e667a87b95f9410e239597d9f7223ef83f29c6c1dcb5b2457418b87bc",
+  "screenRecordingDuringMeasurement": false,
+  "notes": [
+    "Two other simulators were booted; results are process-local RSS, not an isolated host performance comparison.",
+    "Physical iPhone sensor behavior was not tested."
+  ],
+  "hostOS": "macOS 26.6.2 (25G83)"
+}

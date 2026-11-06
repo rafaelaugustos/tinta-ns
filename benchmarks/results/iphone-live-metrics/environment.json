@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "b01c343",
+  "configuration": "Release",
+  "device": "iPhone 17 Pro (physical)",
+  "runtime": "iOS 27.3 (24C5037i)",
+  "binarySHA256": "c5eeca9df050e0fdd79e36f96a61f3f53619513190e9efd5130dc0d2b11629f8",
+  "liveReadoutEnabled": true,
+  "screenRecordingOnDeviceDuringMeasurement": false,
+  "notes": [
+    "Fresh processes; measured shortly after an iOS update.",
+    "Background system work and thermal state were not controlled."
+  ]
+}

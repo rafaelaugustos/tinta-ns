@@ -18,7 +18,7 @@ The renderer, warmup, filtering implementation and measurement method differ fro
 
 A second run measures 30 seconds of the app's automatic ink flow. A native `CADisplayLink` updates the bead and paints into a retained Core Graphics bitmap. The report records callback count, elapsed callback intervals, maximum gap, mean time spent inside the native callback, and process RSS sampled every 60 callbacks.
 
-The callback rate is **UI scheduling cadence**, not GPU presentation FPS. The callback duration includes CPU drawing/submission, not asynchronous GPU completion. Capture this run separately from screen recording.
+The callback rate is **UI scheduling cadence**, not GPU presentation FPS. The callback duration includes CPU drawing/submission, not asynchronous GPU completion. Capture this run separately from screen recording. The visible FPS/RSS labels sample the canvas once a second and stop updating in the background. Reports identify whether these labels were present.
 
 ## Reproduce
 

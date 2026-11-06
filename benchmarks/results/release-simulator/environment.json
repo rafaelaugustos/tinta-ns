@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "d557c3e",
+  "configuration": "Release",
+  "device": "iPhone 17 Pro simulator",
+  "runtime": "iOS 27.0 (24A434)",
+  "binarySHA256": "ea6405c14ed1835fa62a643a043d779c1b7cf6a2a1160357f7f6390095155a31",
+  "purpose": "One smoke run of the additional physical-footprint sampler and updated runner; separate from the three Debug regression runs.",
+  "screenRecordingDuringMeasurement": false
+}

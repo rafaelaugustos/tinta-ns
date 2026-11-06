@@ -7,6 +7,9 @@ A bead of ink rolls over a sheet of paper, leaving lines and small splashes behi
 
 The app runs locally. There is no account, server or upload. This first version targets iOS.
 
+<p align="center"><img src="docs/media/tinta-ios.gif" width="320" alt="Tinta opening and ink flow, recorded in the iOS simulator" /></p>
+<p align="center"><a href="docs/media/tinta-ios.mp4">Watch the iOS capture</a></p>
+
 ## Run
 
 Use macOS, Node 22, the NativeScript CLI, Xcode and CocoaPods. The project uses NativeScript CLI 9.1.
@@ -19,10 +22,11 @@ npm ci
 npm run ios
 ```
 
-To select a simulator, use `npm run ios -- --device <udid>`. List available devices with `xcrun simctl list devices available`.
+To select a simulator, use `npm run ios -- --device <udid>`. List simulators with `xcrun simctl list devices available`; list physical iPhones with `xcrun devicectl list devices`. For a phone, use `npm run ios -- --device <udid> --release --team-id <team-id>` with your Apple development team.
 
 ## In the studio
 
+- The live readout shows canvas UI callback FPS and whole-process RSS in MiB. It refreshes once a second; a paused canvas reports 0 FPS. This is not a GPU presentation counter.
 - **Flow** moves the bead along a repeating path.
 - **Touch** lets you drag anywhere on the paper. On the simulator, click and drag with the mouse.
 - **Tilt** uses the device's gravity sensor. It requires a physical device; use Flow or Touch on the simulator.
@@ -33,6 +37,8 @@ To select a simulator, use `npm run ios -- --device <udid>`. List available devi
 ## Rendering and motion
 
 The studio interface is NativeScript-Vue. Jolt handles the opening timeline, control feedback, interface transitions, vector icons and gravity-sensor input. Sensor readings cross into the canvas at most about 30 times per second. No JavaScript frame loop draws the ink.
+
+The app uses three Jolt entry points: the main package, `shapes` and `sensors`. In code, that means two timelines, spring transitions, press feedback, eight icon paths, gravity motion values, motion scopes and Reduce Motion handling. Rendering stays in the native canvas and probe described below.
 
 The canvas is a small native `UIView`. A `CADisplayLink` advances the bead and paints into a retained Core Graphics bitmap, capped at 2× display scale. The displayed image is replaced after a drawing update; previous frame images are released. Undo retains one image. The drawing does not keep an ever-growing list of paths or render snapshots.
 
@@ -56,7 +62,7 @@ The flask button opens a render lab. It runs 450 offscreen renders with changing
 
 The workload was inspired by the [tgfx offscreen autorelease fix](https://github.com/margelo/react-native-tgfx/pull/19). It is useful for checking Tinta's resource lifetime, but uses a different renderer and is not a direct performance comparison with tgfx or React Native. The supplied app clip and the tgfx 450-render regression are also different workloads.
 
-[Protocol and reproduction commands](benchmarks/PROTOCOL.md) describe warmup, readback, pixel assertions, memory accounting and the no-blur failure control. A separate 30-second run records the canvas's UI callback cadence; that number is not GPU presentation FPS.
+[Measured results](benchmarks/RESULTS.md) include the simulator and physical iPhone runs, failure controls and drawing cadence. [Protocol and reproduction commands](benchmarks/PROTOCOL.md) describe warmup, readback, pixel assertions, memory accounting and the no-blur failure control. A separate 30-second run records the canvas's UI callback cadence; that number is not GPU presentation FPS.
 
 ```sh
 npm run typecheck

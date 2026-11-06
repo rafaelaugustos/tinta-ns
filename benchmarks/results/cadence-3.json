@@ -1,0 +1,133 @@
+{
+  "frames": 1800,
+  "maximumCallbackGapMs": 16.666666691889986,
+  "pid": 49813,
+  "samples": [
+    {
+      "seconds": 1,
+      "rssMiB": 329.09375
+    },
+    {
+      "seconds": 2,
+      "rssMiB": 329.09375
+    },
+    {
+      "seconds": 3,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 4,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 5,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 6,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 7,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 8,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 9,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 10,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 11,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 12,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 13,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 14,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 15,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 16,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 17,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 18,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 19,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 20,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 21,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 22,
+      "rssMiB": 329.078125
+    },
+    {
+      "seconds": 23,
+      "rssMiB": 322.3125
+    },
+    {
+      "seconds": 24,
+      "rssMiB": 322.3125
+    },
+    {
+      "seconds": 25,
+      "rssMiB": 322.3125
+    },
+    {
+      "seconds": 26,
+      "rssMiB": 322.328125
+    },
+    {
+      "seconds": 27,
+      "rssMiB": 322.328125
+    },
+    {
+      "seconds": 28,
+      "rssMiB": 322.328125
+    },
+    {
+      "seconds": 29,
+      "rssMiB": 322.328125
+    },
+    {
+      "seconds": 30,
+      "rssMiB": 322.328125
+    }
+  ],
+  "mode": 0,
+  "pixelHeight": 852,
+  "meanNativeCallbackMs": 2.025418958591116,
+  "seconds": 30,
+  "pixelWidth": 728,
+  "uiCallbackHz": 60
+}

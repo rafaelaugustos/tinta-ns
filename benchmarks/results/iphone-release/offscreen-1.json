@@ -1,0 +1,231 @@
+{
+  "baselinePhysicalFootprintMiB": 45.39240264892578,
+  "physicalFootprintAvailable": 1,
+  "renderer": "Core Image",
+  "settledRSSMiB": 110.640625,
+  "elapsedSeconds": 94.08181750000006,
+  "settledPhysicalFootprintMiB": 37.79865264892578,
+  "baselineRSSMiB": 117.15625,
+  "growthMiB": -6.515625,
+  "baselineMemorySamples": [
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    },
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    },
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    },
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    },
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    },
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    },
+    {
+      "rssMiB": 117.15625,
+      "physicalFootprintMiB": 45.39240264892578
+    }
+  ],
+  "settledMemorySamples": [
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    },
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    },
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    },
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    },
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    },
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    },
+    {
+      "rssMiB": 110.640625,
+      "physicalFootprintMiB": 37.79865264892578
+    }
+  ],
+  "os": "Version 27.3 (Build 24C5037i)",
+  "warmupFrames": 60,
+  "pixelsValid": true,
+  "intervalMs": 150,
+  "schema": 1,
+  "blurRadius": 4,
+  "height": 512,
+  "frames": 450,
+  "width": 512,
+  "peakRSSMiB": 117.15625,
+  "samples": [
+    {
+      "frame": 1,
+      "rssMiB": 117.15625
+    },
+    {
+      "frame": 16,
+      "rssMiB": 116.828125
+    },
+    {
+      "frame": 31,
+      "rssMiB": 116.875
+    },
+    {
+      "frame": 46,
+      "rssMiB": 111.53125
+    },
+    {
+      "frame": 61,
+      "rssMiB": 111.609375
+    },
+    {
+      "frame": 76,
+      "rssMiB": 111.609375
+    },
+    {
+      "frame": 91,
+      "rssMiB": 111.640625
+    },
+    {
+      "frame": 106,
+      "rssMiB": 111.65625
+    },
+    {
+      "frame": 121,
+      "rssMiB": 109.265625
+    },
+    {
+      "frame": 136,
+      "rssMiB": 109.421875
+    },
+    {
+      "frame": 151,
+      "rssMiB": 109.53125
+    },
+    {
+      "frame": 166,
+      "rssMiB": 109.65625
+    },
+    {
+      "frame": 181,
+      "rssMiB": 109.84375
+    },
+    {
+      "frame": 196,
+      "rssMiB": 109.953125
+    },
+    {
+      "frame": 211,
+      "rssMiB": 110
+    },
+    {
+      "frame": 226,
+      "rssMiB": 110
+    },
+    {
+      "frame": 241,
+      "rssMiB": 110
+    },
+    {
+      "frame": 256,
+      "rssMiB": 109.84375
+    },
+    {
+      "frame": 271,
+      "rssMiB": 109.921875
+    },
+    {
+      "frame": 286,
+      "rssMiB": 110.015625
+    },
+    {
+      "frame": 301,
+      "rssMiB": 110.078125
+    },
+    {
+      "frame": 316,
+      "rssMiB": 110.078125
+    },
+    {
+      "frame": 331,
+      "rssMiB": 110.09375
+    },
+    {
+      "frame": 346,
+      "rssMiB": 109.84375
+    },
+    {
+      "frame": 361,
+      "rssMiB": 109.96875
+    },
+    {
+      "frame": 376,
+      "rssMiB": 110.09375
+    },
+    {
+      "frame": 391,
+      "rssMiB": 110.21875
+    },
+    {
+      "frame": 406,
+      "rssMiB": 110.265625
+    },
+    {
+      "frame": 421,
+      "rssMiB": 110.359375
+    },
+    {
+      "frame": 436,
+      "rssMiB": 110.46875
+    }
+  ],
+  "pid": 784,
+  "physicalFootprintGrowthMiB": -7.59375,
+  "checks": [
+    {
+      "frame": 0,
+      "red": 255,
+      "boundaryRed": 141,
+      "valid": true,
+      "blue": 0,
+      "green": 0
+    },
+    {
+      "frame": 1,
+      "red": 255,
+      "boundaryRed": 141,
+      "valid": true,
+      "blue": 1,
+      "green": 0
+    },
+    {
+      "frame": 449,
+      "red": 255,
+      "boundaryRed": 141,
+      "valid": true,
+      "blue": 193,
+      "green": 0
+    }
+  ],
+  "passed": 1
+}

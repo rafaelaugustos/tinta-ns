@@ -1,0 +1,167 @@
+{
+  "growthMiB": 7.46875,
+  "elapsedSeconds": 75.16763158331742,
+  "blurRadius": 4,
+  "samples": [
+    {
+      "frame": 1,
+      "rssMiB": 370.28125
+    },
+    {
+      "frame": 16,
+      "rssMiB": 370.15625
+    },
+    {
+      "frame": 31,
+      "rssMiB": 370.1875
+    },
+    {
+      "frame": 46,
+      "rssMiB": 370.171875
+    },
+    {
+      "frame": 61,
+      "rssMiB": 365.859375
+    },
+    {
+      "frame": 76,
+      "rssMiB": 365.890625
+    },
+    {
+      "frame": 91,
+      "rssMiB": 365.9375
+    },
+    {
+      "frame": 106,
+      "rssMiB": 365.984375
+    },
+    {
+      "frame": 121,
+      "rssMiB": 364.578125
+    },
+    {
+      "frame": 136,
+      "rssMiB": 363.640625
+    },
+    {
+      "frame": 151,
+      "rssMiB": 363.75
+    },
+    {
+      "frame": 166,
+      "rssMiB": 363.859375
+    },
+    {
+      "frame": 181,
+      "rssMiB": 364
+    },
+    {
+      "frame": 196,
+      "rssMiB": 364.1875
+    },
+    {
+      "frame": 211,
+      "rssMiB": 376.984375
+    },
+    {
+      "frame": 226,
+      "rssMiB": 377.046875
+    },
+    {
+      "frame": 241,
+      "rssMiB": 377.046875
+    },
+    {
+      "frame": 256,
+      "rssMiB": 377.046875
+    },
+    {
+      "frame": 271,
+      "rssMiB": 377.09375
+    },
+    {
+      "frame": 286,
+      "rssMiB": 377.125
+    },
+    {
+      "frame": 301,
+      "rssMiB": 377.125
+    },
+    {
+      "frame": 316,
+      "rssMiB": 377.140625
+    },
+    {
+      "frame": 331,
+      "rssMiB": 377.15625
+    },
+    {
+      "frame": 346,
+      "rssMiB": 377.1875
+    },
+    {
+      "frame": 361,
+      "rssMiB": 377.265625
+    },
+    {
+      "frame": 376,
+      "rssMiB": 377.265625
+    },
+    {
+      "frame": 391,
+      "rssMiB": 377.34375
+    },
+    {
+      "frame": 406,
+      "rssMiB": 377.375
+    },
+    {
+      "frame": 421,
+      "rssMiB": 377.390625
+    },
+    {
+      "frame": 436,
+      "rssMiB": 377.5
+    }
+  ],
+  "renderer": "Core Image",
+  "intervalMs": 150,
+  "schema": 1,
+  "width": 512,
+  "checks": [
+    {
+      "frame": 0,
+      "red": 255,
+      "boundaryRed": 141,
+      "valid": true,
+      "blue": 0,
+      "green": 0
+    },
+    {
+      "frame": 1,
+      "red": 255,
+      "boundaryRed": 141,
+      "valid": true,
+      "blue": 1,
+      "green": 0
+    },
+    {
+      "frame": 449,
+      "red": 255,
+      "boundaryRed": 141,
+      "valid": true,
+      "blue": 193,
+      "green": 0
+    }
+  ],
+  "passed": 1,
+  "peakRSSMiB": 377.5,
+  "os": "Version 27.0 (Build 24A434)",
+  "warmupFrames": 60,
+  "pixelsValid": true,
+  "frames": 450,
+  "height": 512,
+  "baselineRSSMiB": 370.265625,
+  "pid": 40576,
+  "settledRSSMiB": 377.734375
+}
