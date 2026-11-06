@@ -9,7 +9,7 @@ function loaded(event: EventData) { scope?.dispose(); scope = motionScope(); sco
 onBeforeUnmount(() => scope?.dispose())
 </script>
 <template>
-  <GridLayout width="44" height="44" borderRadius="22" :backgroundColor="background" @loaded="loaded" @tap="emit('tap')" accessible="true" accessibilityRole="button" :accessibilityLabel="label" :automationText="label">
+  <GridLayout width="44" height="44" borderRadius="22" iosIgnoreSafeArea="true" :backgroundColor="background" @loaded="loaded" @tap="emit('tap')" accessible="true" accessibilityRole="button" :accessibilityLabel="label" :automationText="label">
     <InkIcon :name="icon" :ink="ink" width="20" height="20" />
   </GridLayout>
 </template>

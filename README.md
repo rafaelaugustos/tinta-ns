@@ -3,7 +3,7 @@
 <p align="center">A little ink studio. Move the bead. Leave a mark.</p>
 <p align="center">NativeScript-Vue 3 · <a href="https://jolt.rafaelaugusto.dev/">Jolt RC.11</a> · iOS</p>
 
-A bead of ink rolls over a sheet of paper, leaving lines and small splashes behind. Let it follow its own path, drag it around, or tilt your iPhone. Pick an ink, change the line width, and export the result as a PNG.
+A bead of ink rolls across the whole screen, leaving lines and small splashes behind. It can slip past an edge and come back. Let it follow its own path, drag it around, or tilt your iPhone. Pick an ink, change the line width, and export the result as a PNG.
 
 The app runs locally. There is no account, server or upload. This first version targets iOS.
 
@@ -30,6 +30,7 @@ To select a simulator, use `npm run ios -- --device <udid>`. List simulators wit
 - **Flow** moves the bead along a repeating path.
 - **Touch** lets you drag anywhere on the paper. On the simulator, click and drag with the mouse.
 - **Tilt** uses the device's gravity sensor. It requires a physical device; use Flow or Touch on the simulator.
+- The controls float over the drawing. The top-right button hides them; tap it again to bring them back. The canvas keeps its size and position.
 - Tap **1×** beside undo to cycle through 1×, 1.5×, 2× and 3×. It changes Flow playback, Tilt acceleration and Touch response without speeding up the interface.
 - The four inks and three widths affect new marks. Existing ink stays on the sheet.
 - Pause holds the bead in place. Undo restores the state before the last touch stroke or clear; only one undo image is retained.
@@ -41,15 +42,17 @@ The studio interface is NativeScript-Vue. Jolt drives the bead as well as the op
 
 | Part | Implementation |
 | --- | --- |
-| Flow | The original curve's smoothing is solved ahead of time and passed to Jolt as native keyframes. A short entrance joins a closed, repeating path. |
+| Flow | A closed curve is sampled ahead of time and passed to Jolt as native keyframes. Its turning points lie beyond the screen edges. A short entrance joins the path from the bead's current position. |
 | Touch | A Jolt gesture surface feeds two native spring values bound to the bead's position. Release velocity carries into a bounded landing. |
-| Tilt | Jolt's gravity sensor supplies impulses to a one-body physics world. Jolt integrates motion and handles the paper's walls. |
+| Tilt | Jolt's gravity sensor supplies impulses to a one-body physics world. Jolt integrates motion and handles walls just outside the screen. |
 | Bead | Jolt gradient, vector highlight and contact spring, inside a NativeScript view with a shadow. |
 | Interface | Jolt timelines, spring transitions, press feedback, vector icons, motion scopes and Reduce Motion handling. |
 
 A small native contact observer supplies the initial absolute touch position, which RC.11's gesture values do not expose. It calls JavaScript once per contact. Pan updates and spring following stay native. Tilt holds the latest sensor values and sends impulses through JavaScript at about 30 Hz, including while the phone holds a steady angle. That feed stops when paused or backgrounded. There is no JavaScript drawing loop.
 
-Permanent ink lives in a retained Core Graphics bitmap, capped at 2× display scale. A native `CADisplayLink` reads the bead's presentation position and paints each segment. It no longer computes the bead's movement. The displayed image is replaced after a drawing update, previous images are released, and undo retains one image. Stroke count does not grow a list of paths or snapshots.
+The motion stage extends 32 points beyond each edge. The visible paper and exported PNG cover the screen, including the areas behind the controls and system bars. Safe-area insets position the controls without restricting the drawing.
+
+Permanent ink lives in a retained Core Graphics bitmap, capped at 2× display scale. A native `CADisplayLink` converts the bead's presentation position into paper coordinates and paints each segment. It no longer computes the bead's movement. The displayed image is replaced after a drawing update, previous images are released, and undo retains one image. Stroke count does not grow a list of paths or snapshots.
 
 Movement changes stroke width, and a seeded generator adds small splashes. Export reads the same bitmap. Backgrounding pauses motion and drawing; a settled Touch stroke stops the paint clock. Reduce Motion starts the studio paused and suppresses decorative entrance movement.
 

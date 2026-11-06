@@ -5,7 +5,7 @@ import { physicsWorld, type PhysicsWorld } from '@rafaelaugusto/jolt/physics'
 import { sensor, type GravitySensor } from '@rafaelaugusto/jolt/sensors'
 import { shape } from '@rafaelaugusto/jolt/shapes'
 import type { InputMode } from '../domain/studio'
-import { beadRadius, clampPoint, flowFrames, flowPeriod, type Point, type PaperSize } from '../domain/flow'
+import { beadRadius, edgeOvershoot, clampPoint, flowFrames, flowPeriod, type Point, type PaperSize } from '../domain/flow'
 
 export class InkMotion {
   private readonly scope = motionScope()
@@ -31,6 +31,7 @@ export class InkMotion {
 
   constructor(
     private readonly surface: GestureSurface,
+    private readonly stage: GridLayout,
     private readonly paper: TintaCanvas,
     private readonly actor: GridLayout,
     private readonly finish: GridLayout,
@@ -52,8 +53,14 @@ export class InkMotion {
       spring: { stiffness: 36, damping: 12, mass: 1 },
       onEnd: event => {
         if (this.mode !== 'touch' || !this.running) return
-        // Native Jolt gesture springs carry release velocity to a bounded landing.
-        this.input.settleTo({ x: event.x + event.velocityX * .12, y: event.y + event.velocityY * .12 })
+        // Let release velocity carry the bead past an edge, then settle with
+        // its center on screen so it remains visible after the spring rests.
+        const left = beadRadius - edgeOvershoot - this.offset.x
+        const top = beadRadius - edgeOvershoot - this.offset.y
+        this.input.settleTo({
+          x: Math.max(left, Math.min(left + this.size.width, event.x + event.velocityX * .12)),
+          y: Math.max(top, Math.min(top + this.size.height, event.y + event.velocityY * .12)),
+        })
       },
       onContactEnd: () => {
         if (!this.disposed) this.scope.animate(finish, { scale: 1 }, { type: 'spring', duration: 350, bounce: .08 })
@@ -76,7 +83,7 @@ export class InkMotion {
   }
 
   private position(): Point { return this.paper.currentPoint }
-  private place(point: Point) { set(this.actor, { x: point.x - beadRadius, y: point.y - beadRadius }) }
+  private place(point: Point) { set(this.actor, { x: point.x + edgeOvershoot - beadRadius, y: point.y + edgeOvershoot - beadRadius }) }
 
   private stopDriver() {
     // The initial placement has not reached Core Animation's presentation yet.
@@ -103,7 +110,8 @@ export class InkMotion {
       // Physics owns this dedicated view's native transform. Restore Core's
       // model before handing it over; Jolt starts the body at the visible pose.
       set(this.actor, { x: 0, y: 0 })
-      this.world = physicsWorld(this.surface, [{ id: 'ink', view: this.actor, radius: beadRadius, ...clampPoint(point, this.size) }], {
+      const center = clampPoint(point, this.size)
+      this.world = physicsWorld(this.stage, [{ id: 'ink', view: this.actor, radius: beadRadius, x: center.x + edgeOvershoot, y: center.y + edgeOvershoot }], {
         gravity: { x: 0, y: 0 }, damping: 1.8, restitution: .65, reducedMotion: 'continue',
       })
       if (!this.running) this.world.pause()
@@ -137,12 +145,12 @@ export class InkMotion {
     this.unbind?.()
     this.followers.forEach(value => value.dispose())
     const position = this.input.position
-    this.offset = { x: target.x - beadRadius - position.x, y: target.y - beadRadius - position.y }
-    this.input.updateBounds({ left: -this.offset.x, right: this.size.width - 30 - this.offset.x, top: -this.offset.y, bottom: this.size.height - 30 - this.offset.y })
+    this.offset = { x: target.x + edgeOvershoot - beadRadius - position.x, y: target.y + edgeOvershoot - beadRadius - position.y }
+    this.input.updateBounds({ left: -this.offset.x, right: this.size.width + edgeOvershoot * 2 - 30 - this.offset.x, top: -this.offset.y, bottom: this.size.height + edgeOvershoot * 2 - 30 - this.offset.y })
     const mapped = (axis: 'x' | 'y') => this.input[axis].to([-10000, 10000], [-10000 + this.offset[axis], 10000 + this.offset[axis]], { clamp: false })
     const spring = { stiffness: 324 * this.speed ** 2, damping: 36 * this.speed }
-    const x = springValue(mapped('x'), { ...spring, initial: point.x - beadRadius })
-    const y = springValue(mapped('y'), { ...spring, initial: point.y - beadRadius })
+    const x = springValue(mapped('x'), { ...spring, initial: point.x + edgeOvershoot - beadRadius })
+    const y = springValue(mapped('y'), { ...spring, initial: point.y + edgeOvershoot - beadRadius })
     this.followers = [x, y]
     this.unbind = bind(this.actor, { x, y })
     if (!this.running) this.followers.forEach(value => value.pause())
@@ -222,7 +230,7 @@ export class InkMotion {
       this.place(point); this.startFlow(point, offset)
     } else if (this.mode === 'touch') {
       const position = this.input.position
-      this.followTouch(point, { x: position.x + this.offset.x + beadRadius, y: position.y + this.offset.y + beadRadius })
+      this.followTouch(point, { x: position.x + this.offset.x + beadRadius - edgeOvershoot, y: position.y + this.offset.y + beadRadius - edgeOvershoot })
     }
   }
   private applyRunning() {

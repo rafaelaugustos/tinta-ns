@@ -10,6 +10,8 @@ const paths: Record<string, string> = {
   close: 'M6 6 L18 18 M18 6 L6 18',
   lab: 'M9 3 L15 3 M10 3 L10 10 L4 19 Q3 22 7 22 L17 22 Q21 22 20 19 L14 10 L14 3 M7 16 L17 16',
   arrow: 'M4 12 L20 12 M14 6 L20 12 L14 18',
+  expand: 'M9 3 L3 3 L3 9 M15 3 L21 3 L21 9 M3 15 L3 21 L9 21 M15 21 L21 21 L21 15',
+  controls: 'M4 7 L8 7 M12 7 L20 7 M4 17 L14 17 M18 17 L20 17 M10 4 L10 10 M16 14 L16 20',
 }
 export class InkIcon extends GridLayout {
   declare name: string

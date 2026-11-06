@@ -86,7 +86,8 @@
 - (CGPoint)currentPoint {
     CALayer *layer = self.trackedView.layer.presentationLayer ?: self.trackedView.layer;
     if (!layer) return _point;
-    return CGPointMake(layer.position.x + layer.transform.m41, layer.position.y + layer.transform.m42);
+    CGPoint center = CGPointMake(layer.position.x + layer.transform.m41, layer.position.y + layer.transform.m42);
+    return [self convertPoint:center fromView:self.trackedView.superview];
 }
 - (void)resetTracking {
     _point = _previous = self.currentPoint; _tracking = NO; _lastTimestamp = 0; _idleFrames = 0; [self updateClock];

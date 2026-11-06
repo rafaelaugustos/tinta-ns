@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'nativescript-vue'
-import { ApplicationSettings, knownFolders, type EventData, type GridLayout, type View } from '@nativescript/core'
+import { ApplicationSettings, knownFolders, type AbsoluteLayout, type EventData, type View } from '@nativescript/core'
 import { motionScope, onReducedMotion, reducedMotion } from '@rafaelaugusto/jolt'
 import type { InkView } from './canvas/ink-view'
 import { inks, modes, type InputMode, type ProbeResult } from './domain/studio'
@@ -10,25 +10,26 @@ import Opening from './components/Opening.vue'
 import RenderLab from './components/RenderLab.vue'
 import PerformanceReadout from './components/PerformanceReadout.vue'
 
-const width = ref(402), height = ref(790)
+const width = ref(402), height = ref(874)
+const safeTop = ref(62), safeBottom = ref(34), controlsVisible = ref(true)
 const opening = ref(true), playing = ref(!reducedMotion()), lab = ref(false), busy = ref(false)
 const selectedInk = ref(Math.max(0, Math.min(3, ApplicationSettings.getNumber('tinta.ink', 0))))
 const brush = ref(3.2), mode = ref<InputMode>('flow'), hint = ref('Let it wander. Or make your own mark.')
 const speeds = [1, 1.5, 2, 3]
 const speed = ref(1)
 const progress = ref(0), phase = ref('Ready'), result = ref<ProbeResult | null>(null)
-const canvasTop = 130
-const canvasHeight = computed(() => Math.max(200, height.value - 350))
-const toolsTop = computed(() => canvasTop + canvasHeight.value + 18)
+const toolsTop = computed(() => height.value - safeBottom.value - 210)
 const motion = motionScope()
-let ink: InkView | undefined, root: GridLayout | undefined
+let ink: InkView | undefined, root: AbsoluteLayout | undefined
 let hintTimer: ReturnType<typeof setTimeout> | undefined
 let autoProbe: ReturnType<typeof setTimeout> | undefined
 let releaseSpeed: (() => void) | undefined
 function layout(event: EventData) {
-  root = event.object as GridLayout
+  root = event.object as AbsoluteLayout
   const size = root.getActualSize()
-  if (size.width > 0 && size.height > 0) { width.value = Math.min(size.width, 560); height.value = size.height }
+  if (size.width > 0 && size.height > 0) { width.value = size.width; height.value = size.height }
+  const insets = root.nativeViewProtected?.safeAreaInsets
+  if (insets) { safeTop.value = insets.top; safeBottom.value = insets.bottom }
 }
 function sync() {
   if (!ink) return
@@ -47,7 +48,7 @@ async function enter() {
     const target = (id: string) => root!.getViewById<View>(id)
     motion.timeline([
       [target('studio-header'), { opacity: [0, 1], y: reducedMotion() ? 0 : [-8, 0] }, { at: 0, duration: 450 }],
-      [target('paper'), { opacity: [0, 1], scale: reducedMotion() ? 1 : [.96, 1] }, { at: 100, type: 'spring', duration: 800, bounce: .04 }],
+      [target('paper'), { opacity: [0, 1] }, { at: 100, duration: 500 }],
       [target('tools'), { opacity: [0, 1], y: reducedMotion() ? 0 : [20, 0] }, { at: 250, type: 'spring', duration: 650, bounce: .08 }],
     ])
   }
@@ -69,6 +70,12 @@ function chooseInk(index: number) { selectedInk.value = index; ApplicationSettin
 function changeSpeed() {
   speed.value = speeds[(speeds.indexOf(speed.value) + 1) % speeds.length]!
   message(mode.value === 'touch' ? `Touch response · ${speed.value}×` : `Ink speed · ${speed.value}×`)
+}
+function toggleControls() {
+  controlsVisible.value = !controlsVisible.value
+  if (!root) return
+  const targets = ['studio-title', 'readout', 'tools', 'hint', 'lab-button'].map(id => root!.getViewById<View>(id))
+  motion.animate(targets, { opacity: controlsVisible.value ? 1 : 0 }, { duration: 180 })
 }
 function speedReady(event: EventData) {
   releaseSpeed?.()
@@ -105,55 +112,49 @@ onBeforeUnmount(() => { clearTimeout(hintTimer); clearTimeout(autoProbe); motion
 </script>
 
 <template>
-  <Page actionBarHidden="true" backgroundColor="#F4F1E9" statusBarStyle="dark">
-    <GridLayout iosOverflowSafeArea="false" iosOverflowSafeAreaEnabled="false" @loaded="layout" @layoutChanged="layout" backgroundColor="#F4F1E9" clipToBounds="true">
-      <AbsoluteLayout :width="width" :height="height">
-        <GridLayout id="studio-header" left="24" top="10" :width="width-48" height="80" columns="*,44">
-          <StackLayout>
-            <Label text="tinta." fontSize="43" fontWeight="800" letterSpacing="-0.06" />
-            <Label text="INK, IN MOTION" fontSize="9" color="#8A8C7F" letterSpacing="0.16" />
+  <Page actionBarHidden="true" iosIgnoreSafeArea="true" backgroundColor="#F9F7F1" statusBarStyle="dark">
+    <AbsoluteLayout iosIgnoreSafeArea="true" @loaded="layout" @layoutChanged="layout" backgroundColor="#F9F7F1" clipToBounds="true">
+      <InkView id="paper" left="0" top="0" :width="width" :height="height" @canvasReady="ready" @modeChanged="fromCanvas" />
+      <GridLayout id="studio-header" left="20" :top="safeTop+8" :width="width-40" height="48" columns="*,44,8,44" iosIgnoreSafeArea="true" isPassThroughParentEnabled="true">
+        <Label id="studio-title" text="tinta." fontSize="31" fontWeight="800" letterSpacing="-0.06" verticalAlignment="center" isUserInteractionEnabled="false" :accessibilityHidden="!controlsVisible" />
+        <ToolButton id="lab-button" col="1" icon="lab" label="Open render lab" @tap="lab = true" :isUserInteractionEnabled="controlsVisible" :accessibilityHidden="!controlsVisible" verticalAlignment="center" />
+        <ToolButton col="3" :icon="controlsVisible ? 'expand' : 'controls'" :label="controlsVisible ? 'Hide controls' : 'Show controls'" @tap="toggleControls" verticalAlignment="center" />
+      </GridLayout>
+      <PerformanceReadout id="readout" left="20" :top="safeTop+64" :width="width-40" height="50" padding="8 12" borderRadius="16" backgroundColor="rgba(249,247,241,.92)" :read="readPerformance" isUserInteractionEnabled="false" :accessibilityHidden="!controlsVisible" iosIgnoreSafeArea="true" />
+      <GridLayout id="tools" left="16" :top="toolsTop" :width="width-32" height="186" rows="48,70,44" padding="12" borderRadius="28" backgroundColor="rgba(244,241,233,.96)" boxShadow="0 4 20 0 rgba(35,36,30,.12)" iosIgnoreSafeArea="true" :isUserInteractionEnabled="controlsVisible" :accessibilityHidden="!controlsVisible">
+        <GridLayout columns="*,126" rows="48">
+          <StackLayout orientation="horizontal" verticalAlignment="center">
+            <GridLayout v-for="(item,index) in inks" :key="item.name" width="36" height="36" marginRight="6" borderRadius="18" :borderWidth="selectedInk===index ? 1.5 : 0" :borderColor="item.color" padding="5" @tap="chooseInk(index)" accessible="true" accessibilityRole="button" :accessibilityLabel="item.name">
+              <GridLayout :backgroundColor="item.color" borderRadius="14" />
+            </GridLayout>
           </StackLayout>
-          <ToolButton col="1" icon="lab" label="Open render lab" @tap="lab = true" verticalAlignment="center" />
-        </GridLayout>
-        <PerformanceReadout left="26" top="86" :width="width-52" height="38" :read="readPerformance" />
-        <GridLayout id="paper" left="18" :top="canvasTop" :width="width-36" :height="canvasHeight" borderRadius="24" borderWidth="1" borderColor="#E2DED1" clipToBounds="true" backgroundColor="#F9F7F1">
-          <InkView @canvasReady="ready" @modeChanged="fromCanvas" />
-        </GridLayout>
-        <GridLayout id="tools" left="24" :top="toolsTop" :width="width-48" height="162" rows="48,70,44">
-          <GridLayout columns="*,126" rows="48">
-            <StackLayout orientation="horizontal" verticalAlignment="center">
-              <GridLayout v-for="(item,index) in inks" :key="item.name" width="36" height="36" marginRight="6" borderRadius="18" :borderWidth="selectedInk===index ? 1.5 : 0" :borderColor="item.color" padding="5" @tap="chooseInk(index)" accessible="true" accessibilityRole="button" :accessibilityLabel="item.name">
-                <GridLayout :backgroundColor="item.color" borderRadius="14" />
-              </GridLayout>
-            </StackLayout>
-            <GridLayout col="1" columns="*,*,*" height="34" borderRadius="17" backgroundColor="#EAE8DF" verticalAlignment="center" padding="3">
-              <GridLayout v-for="(value,index) in [1.5,3.2,7]" :key="value" :col="index" borderRadius="14" :backgroundColor="brush===value ? '#FDFCF8' : 'transparent'" @tap="brush=value" accessible="true" accessibilityRole="button" :accessibilityLabel="['Fine ink','Medium ink','Bold ink'][index]">
-                <GridLayout :width="index*3+3" :height="index*3+3" borderRadius="5" backgroundColor="#45473F" />
-              </GridLayout>
+          <GridLayout col="1" columns="*,*,*" height="34" borderRadius="17" backgroundColor="#EAE8DF" verticalAlignment="center" padding="3">
+            <GridLayout v-for="(value,index) in [1.5,3.2,7]" :key="value" :col="index" borderRadius="14" :backgroundColor="brush===value ? '#FDFCF8' : 'transparent'" @tap="brush=value" accessible="true" accessibilityRole="button" :accessibilityLabel="['Fine ink','Medium ink','Bold ink'][index]">
+              <GridLayout :width="index*3+3" :height="index*3+3" borderRadius="5" backgroundColor="#45473F" />
             </GridLayout>
           </GridLayout>
-          <GridLayout row="1" columns="*,44" rows="62" marginTop="8">
-            <GridLayout columns="*,*,*" rows="38" height="46" backgroundColor="#EAE8DF" borderRadius="23" padding="4" marginRight="12" verticalAlignment="center">
-              <GridLayout v-for="(item,index) in modes" :key="item" :col="index" borderRadius="20" :backgroundColor="mode===item ? '#273AE8' : 'transparent'" @tap="chooseMode(item)" accessible="true" accessibilityRole="button" :accessibilityLabel="item+' mode'">
-                <Label :text="item[0]!.toUpperCase()+item.slice(1)" fontSize="12" fontWeight="600" :color="mode===item ? 'white' : '#787B6F'" textAlignment="center" verticalAlignment="center" />
-              </GridLayout>
-            </GridLayout>
-            <ToolButton col="1" :icon="playing ? 'pause' : 'play'" :label="playing ? 'Pause ink' : 'Resume ink'" @tap="playing = !playing" verticalAlignment="center" />
-          </GridLayout>
-          <GridLayout row="2" columns="*,56,44,44,44" rows="44">
-            <Label :text="inks[selectedInk]!.name" fontSize="11" color="#8A8C7F" verticalAlignment="center" />
-            <GridLayout col="1" width="52" height="44" borderRadius="22" backgroundColor="#EAE8DF" @loaded="speedReady" @tap="changeSpeed" accessible="true" accessibilityRole="button" :accessibilityLabel="`Ink speed ${speed} times. Tap to change.`">
-              <Label :text="`${speed}×`" fontSize="12" fontWeight="600" textAlignment="center" verticalAlignment="center" />
-            </GridLayout>
-            <ToolButton col="2" icon="undo" label="Undo last stroke" background="transparent" @tap="undo" />
-            <ToolButton col="3" icon="clear" label="Clear paper" background="transparent" @tap="clear" />
-            <ToolButton col="4" icon="share" label="Export drawing" background="transparent" @tap="share" />
-          </GridLayout>
         </GridLayout>
-        <Label left="24" :top="height-28" :width="width-48" height="18" :text="hint" textAlignment="center" fontSize="10" color="#96988C" />
-        <Opening v-if="opening" left="0" top="0" :width="width" :height="height" @finished="enter" />
-        <RenderLab v-if="lab" left="0" top="0" :width="width" :height="height" :busy="busy" :frame="progress" :phase="phase" :result="result" @close="lab=false" @run="runProbe" />
-      </AbsoluteLayout>
-    </GridLayout>
+        <GridLayout row="1" columns="*,44" rows="62" marginTop="8">
+          <GridLayout columns="*,*,*" rows="38" height="46" backgroundColor="#EAE8DF" borderRadius="23" padding="4" marginRight="12" verticalAlignment="center">
+            <GridLayout v-for="(item,index) in modes" :key="item" :col="index" borderRadius="20" :backgroundColor="mode===item ? '#273AE8' : 'transparent'" @tap="chooseMode(item)" accessible="true" accessibilityRole="button" :accessibilityLabel="item+' mode'">
+              <Label :text="item[0]!.toUpperCase()+item.slice(1)" fontSize="12" fontWeight="600" :color="mode===item ? 'white' : '#787B6F'" textAlignment="center" verticalAlignment="center" />
+            </GridLayout>
+          </GridLayout>
+          <ToolButton col="1" :icon="playing ? 'pause' : 'play'" :label="playing ? 'Pause ink' : 'Resume ink'" @tap="playing = !playing" verticalAlignment="center" />
+        </GridLayout>
+        <GridLayout row="2" columns="*,56,44,44,44" rows="44">
+          <Label :text="inks[selectedInk]!.name" fontSize="11" color="#8A8C7F" verticalAlignment="center" />
+          <GridLayout col="1" width="52" height="44" borderRadius="22" backgroundColor="#EAE8DF" @loaded="speedReady" @tap="changeSpeed" accessible="true" accessibilityRole="button" :accessibilityLabel="`Ink speed ${speed} times. Tap to change.`">
+            <Label :text="`${speed}×`" fontSize="12" fontWeight="600" textAlignment="center" verticalAlignment="center" />
+          </GridLayout>
+          <ToolButton col="2" icon="undo" label="Undo last stroke" background="transparent" @tap="undo" />
+          <ToolButton col="3" icon="clear" label="Clear paper" background="transparent" @tap="clear" />
+          <ToolButton col="4" icon="share" label="Export drawing" background="transparent" @tap="share" />
+        </GridLayout>
+      </GridLayout>
+      <Label id="hint" left="24" :top="height-safeBottom-22" :width="width-48" height="18" :text="hint" textAlignment="center" fontSize="10" color="#77796C" isUserInteractionEnabled="false" :accessibilityHidden="!controlsVisible" iosIgnoreSafeArea="true" />
+      <Opening v-if="opening" left="0" top="0" :width="width" :height="height" @finished="enter" />
+      <RenderLab v-if="lab" left="0" top="0" :width="width" :height="height" :busy="busy" :frame="progress" :phase="phase" :result="result" @close="lab=false" @run="runProbe" />
+    </AbsoluteLayout>
   </Page>
 </template>
