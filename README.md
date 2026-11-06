@@ -56,7 +56,7 @@ The motion stage extends 32 points beyond each edge. The visible paper and expor
 
 Permanent ink lives in a retained Core Graphics bitmap, capped at 2× display scale. A native `CADisplayLink` converts the bead's presentation position into paper coordinates and paints each segment. It no longer computes the bead's movement. The displayed image is replaced after a drawing update, previous images are released, and undo retains one image. Stroke count does not grow a list of paths or snapshots.
 
-Movement changes stroke width, and a seeded generator adds small splashes. Export reads the same bitmap. Backgrounding pauses motion and drawing; a settled Touch stroke stops the paint clock. Reduce Motion starts the studio paused and suppresses decorative entrance movement.
+Movement changes stroke width. A seeded generator places small groups of drops along the stroke, with varied sizes and shapes; faster movement throws them farther. The drops become part of the same bitmap used for export and undo. Backgrounding pauses motion and drawing; a settled Touch stroke stops the paint clock. Reduce Motion starts the studio paused and suppresses decorative entrance movement.
 
 Jolt's iOS shapes already use Core Graphics paths and Core Animation layers. The remaining bitmap painter handles accumulation, undo and PNG export; converting every permanent mark into an animated view would add resources without helping this drawing model.
 

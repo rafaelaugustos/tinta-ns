@@ -7,6 +7,7 @@
     CGImageRef _undoImage;
     CGSize _paperSize;
     CGFloat _pixelScale;
+    CGFloat _splashTravel, _nextSplash;
     CGPoint _point, _previous;
     NSUInteger _idleFrames;
     double _lastTimestamp;
@@ -90,7 +91,7 @@
     return [self convertPoint:center fromView:self.trackedView.superview];
 }
 - (void)resetTracking {
-    _point = _previous = self.currentPoint; _tracking = NO; _lastTimestamp = 0; _idleFrames = 0; [self updateClock];
+    _point = _previous = self.currentPoint; _tracking = NO; _splashTravel = 0; _lastTimestamp = 0; _idleFrames = 0; [self updateClock];
 }
 - (void)suspend { _foreground = NO; [self updateClock]; }
 - (void)resume { _foreground = YES; _tracking = NO; _lastTimestamp = 0; [self updateClock]; }
@@ -108,6 +109,42 @@
     return info.resident_size / 1048576.;
 }
 - (CGFloat)randomUnit { _random = 1664525 * _random + 1013904223; return (CGFloat)(_random >> 8) / 16777216.; }
+- (void)scatterInkFrom:(CGPoint)start to:(CGPoint)end speed:(CGFloat)speed {
+    if (speed < 45) { _splashTravel = 0; return; }
+    CGFloat dx = end.x - start.x, dy = end.y - start.y;
+    CGFloat distance = hypot(dx, dy);
+    if (!_nextSplash) _nextSplash = 22 + [self randomUnit] * 18;
+    _splashTravel += distance;
+    CGContextSaveGState(_paper);
+    CGContextSetFillColorWithColor(_paper, _inkColor.CGColor);
+    // Space splashes along the stroke, including between display samples.
+    // Fast movement throws ink farther; each splash has a few smaller drops.
+    for (NSUInteger burst = 0; burst < 4 && _splashTravel >= _nextSplash; burst++) {
+        CGFloat fraction = (distance - (_splashTravel - _nextSplash)) / distance;
+        _splashTravel -= _nextSplash;
+        _nextSplash = 22 + [self randomUnit] * 18;
+        CGFloat angle = atan2(dy, dx) + ([self randomUnit] - .5) * M_PI * 2;
+        CGFloat spread = 8 + [self randomUnit] * (18 + MIN(34, speed * .04));
+        CGPoint center = CGPointMake(start.x + dx * fraction + cos(angle) * spread,
+                                     start.y + dy * fraction + sin(angle) * spread);
+        NSUInteger drops = 2 + ([self randomUnit] < .4 ? 1 : 0);
+        for (NSUInteger drop = 0; drop < drops; drop++) {
+            CGFloat variation = [self randomUnit];
+            CGFloat radius = drop == 0 ? .9 + variation * variation * 2.8 : .4 + variation * 1.1;
+            CGFloat stretch = drop == 0 && [self randomUnit] < .45 ? 1.3 + [self randomUnit] * MIN(1.3, speed / 500) : 1;
+            CGFloat x = center.x, y = center.y;
+            if (drop > 0) { x += ([self randomUnit] - .5) * 18; y += ([self randomUnit] - .5) * 18; }
+            CGContextSaveGState(_paper);
+            CGContextSetAlpha(_paper, .6 + [self randomUnit] * .4);
+            CGContextTranslateCTM(_paper, x, y); CGContextRotateCTM(_paper, angle);
+            CGContextFillEllipseInRect(_paper, CGRectMake(-radius * stretch, -radius, radius * stretch * 2, radius * 2));
+            CGContextRestoreGState(_paper);
+        }
+    }
+    // A delayed frame must not leave a backlog of splashes on the next one.
+    _splashTravel = MIN(_splashTravel, _nextSplash);
+    CGContextRestoreGState(_paper);
+}
 - (void)saveUndo {
     if (_undoImage) CGImageRelease(_undoImage);
     _undoImage = _paper ? CGBitmapContextCreateImage(_paper) : NULL;
@@ -128,18 +165,14 @@
         _point = self.currentPoint;
         // A new layout or resumed animation needs one committed presentation
         // sample before it can form a segment with the next frame.
-        if (!_tracking) { _previous = _point; _tracking = YES; }
+        if (!_tracking) { _previous = _point; _splashTravel = 0; _tracking = YES; }
         double distance = hypot(_point.x-_previous.x,_point.y-_previous.y);
         if (distance > .08) {
             CGFloat speed = distance/dt, thickness = _brushWidth * (1.25-MIN(.65,speed/900));
             CGContextSetStrokeColorWithColor(_paper,_inkColor.CGColor); CGContextSetLineCap(_paper,kCGLineCapRound);
             CGContextSetLineWidth(_paper,thickness); CGContextMoveToPoint(_paper,_previous.x,_previous.y);
             CGContextAddLineToPoint(_paper,_point.x,_point.y); CGContextStrokePath(_paper);
-            if (speed>70 && [self randomUnit]<.18) {
-                CGFloat angle=[self randomUnit]*M_PI*2, spread=10+[self randomUnit]*20, radius=.55+[self randomUnit]*1.4;
-                CGContextSetFillColorWithColor(_paper,[_inkColor colorWithAlphaComponent:.75].CGColor);
-                CGContextFillEllipseInRect(_paper,CGRectMake(_point.x+cos(angle)*spread,_point.y+sin(angle)*spread,radius*2,radius*2));
-            }
+            [self scatterInkFrom:_previous to:_point speed:speed];
             [self presentPaper];
         }
         _idleFrames = distance < .01 ? _idleFrames + 1 : 0;
