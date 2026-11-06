@@ -7,8 +7,10 @@ A bead of ink rolls across the whole screen, leaving lines and small splashes be
 
 The app runs locally. There is no account, server or upload. This first version targets iOS.
 
-<p align="center"><img src="docs/media/tinta-ios.gif" width="320" alt="Tinta opening and ink flow, recorded in the iOS simulator" /></p>
+<p align="center"><img src="docs/media/tinta-ios.gif" width="320" alt="Tinta drawing across the full iPhone screen, with floating controls" /></p>
 <p align="center"><a href="docs/media/tinta-ios.mp4">Watch the iOS capture</a></p>
+
+Recorded in the simulator at normal playback speed. The app switches from 1× to 1.5× Flow, hides the controls, then follows a touch gesture.
 
 ## Run
 

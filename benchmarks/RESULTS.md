@@ -1,5 +1,17 @@
 # Measured results
 
+## Full-screen canvas
+
+Release build `915fa5b` expands the paper to the display and lets the bead travel beyond its edges. One fresh-process simulator run used a 402 × 874 point viewport, an 804 × 1748 bitmap, default 1× Flow and visible FPS/RSS labels.
+
+| UI callbacks/s | Largest interval | Mean painter callback | Sampled process RSS |
+| ---: | ---: | ---: | ---: |
+| 60.00 | 16.67 ms | 0.22 ms | 328.73–335.95 MiB |
+
+The [30-second report](results/fullscreen/simulator/cadence-1.json) contains 1,800 callbacks. No recording or build ran during capture; host load was not isolated, and an iPhone app install and launch overlapped the run. This is a simulator regression check, not a GPU-FPS measurement or a comparison with the smaller canvas. [Build metadata](results/fullscreen/environment.json).
+
+The [synthetic Tilt replay](results/fullscreen/simulator/tilt-check.json) moved the body 100.41 points along Y with no X drift, then held its position while paused. Simulator interaction checks covered speed, pause, clear, undo, hiding/restoring controls, a drag toward the bottom-right edge, and an 804 × 1748 PNG export. Five unit tests and type checking passed. The signed build was installed and launched on the iPhone; physical Tilt feel was not measured.
+
 ## Jolt motion and speed controls
 
 Release build `f14180e` moves Flow, Touch following, Tilt physics and bead styling to Jolt RC.11. The retained bitmap still paints permanent ink. These runs use the default 1× speed, live FPS/RSS labels and a 728 × 852 bitmap. [Build metadata](results/jolt-refactor/environment.json).
