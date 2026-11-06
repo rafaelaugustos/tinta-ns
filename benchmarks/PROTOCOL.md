@@ -16,9 +16,9 @@ The renderer, warmup, filtering implementation and measurement method differ fro
 
 ## Drawing cadence
 
-A second run measures 30 seconds of the app's automatic ink flow. A native `CADisplayLink` updates the bead and paints into a retained Core Graphics bitmap. The report records callback count, elapsed callback intervals, maximum gap, mean time spent inside the native callback, and process RSS sampled every 60 callbacks.
+A second run measures 30 seconds of the app's automatic ink flow at the default 1× speed. Jolt animates the bead; a native `CADisplayLink` samples its presentation position and paints into a retained Core Graphics bitmap. The report records callback count, elapsed callback intervals, maximum gap, mean time spent inside the native callback, and process RSS sampled every 60 callbacks. Reports from before `f14180e` used the canvas's own movement integration.
 
-The callback rate is **UI scheduling cadence**, not GPU presentation FPS. The callback duration includes CPU drawing/submission, not asynchronous GPU completion. Capture this run separately from screen recording. The visible FPS/RSS labels sample the canvas once a second and stop updating in the background. Reports identify whether these labels were present.
+The callback rate is **UI scheduling cadence**, not GPU presentation FPS. The callback duration includes CPU drawing/submission, not asynchronous GPU completion. In the Jolt version it also excludes Jolt's separate animation and physics work, so before/after callback durations are not total rendering-cost comparisons. Capture this run separately from screen recording. The visible FPS/RSS labels sample the canvas once a second and stop updating in the background. Reports identify whether these labels were present.
 
 ## Reproduce
 
@@ -35,6 +35,10 @@ npm run benchmark -- <udid> --kind cadence --runs 3
 The no-blur control is expected to fail pixel validation. The command treats that failure as the expected control result; it does not turn it into a passing render report.
 
 Reports are written to `Documents/benchmarks` inside the app and copied to `benchmarks/results` by the runner. Keep the build configuration, OS, simulator/device, source revision and background workload alongside any published results. A simulator run says nothing about physical-device battery use or Apple Pencil input latency.
+
+## Synthetic Tilt check
+
+With a build installed, launch `xcrun simctl launch --terminate-running-process <udid> dev.rafaelaugusto.tinta --tinta-check-tilt`. After opening, the app replays constant gravity through Jolt's native sensor pipeline, checks movement along Y while X stays zero, and verifies that pause holds the body. The result is written to `Documents/benchmarks/tilt-check.json` in the app container, with its process ID and `synthetic: true`. This command works without simulator sensor hardware. It does not replace a test of the physical iPhone's sensor response.
 
 ## Physical iPhone
 

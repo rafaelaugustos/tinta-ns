@@ -1,0 +1,34 @@
+{
+  "date": "2026-11-06",
+  "sourceCommit": "f14180e07c8c1be3f97d7f093939ba94ae8f9edc",
+  "baselineSourceCommit": "b01c343",
+  "configuration": "Release",
+  "jolt": "0.1.0-rc.11",
+  "nativeScript": "9.1.3",
+  "nativeScriptVue": "3.1.3",
+  "speed": 1,
+  "simulator": {
+    "name": "Tinta",
+    "model": "iPhone 17 Pro",
+    "runtime": "iOS 27.0 (24A434)",
+    "udid": "355339A9-87AF-4905-A9A8-8298CBACABCB"
+  },
+  "iphone": {
+    "model": "iPhone 17 Pro",
+    "runtime": "iOS 27.3 (24C5037i)"
+  },
+  "binarySHA256": {
+    "beforeSimulator": "bfd6229d11a1ad4d5536f102c0633657cc46f45039c2194ecc2551a52e798434",
+    "afterSimulator": "a3d2ab413579ee14d8dc576ad3a952a07a2ba707a20a86c06be13ed045a5f3b4",
+    "afterIPhone": "62e5b818be984d27047f05200193d676c2293dfa3c16a55d12ae1f827477e32b"
+  },
+  "notes": [
+    "No screen recording or build ran during cadence measurements.",
+    "Simulator and physical-device cadence ran concurrently; they use separate app processes.",
+    "Other simulator and host work was not controlled. One baseline run is retained; this is a regression check, not an isolated framework comparison.",
+    "Native callback work measures the bitmap painter, excluding Jolt animation/physics work and GPU presentation.",
+    "The iPhone locked after both reports were collected; subsequent screenshot/foreground launch attempts were unavailable. Tilt was not exercised by these runs."
+  ],
+  "tiltCheckSourceCommit": "adfd69bbcd30295610fac381a282da99939963d1",
+  "tiltCheckBinarySHA256": "3dce94d6f18399ced08a8dd64e2a16ee87ccd6396a5c5cad3958bb4663a9b63e"
+}

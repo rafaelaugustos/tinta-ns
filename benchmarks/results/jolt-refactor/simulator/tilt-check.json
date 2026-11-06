@@ -1,0 +1,57 @@
+{
+  "synthetic": true,
+  "pid": 15816,
+  "start": {
+    "x": 300.124418781635,
+    "radius": 15,
+    "attachment": null,
+    "y": 240.57795118066062,
+    "vy": 0,
+    "held": false,
+    "pointer": null,
+    "release": null,
+    "snap": null,
+    "vx": 0,
+    "id": "ink"
+  },
+  "moving": {
+    "x": 300.124418781635,
+    "radius": 15,
+    "attachment": null,
+    "y": 349.89874970276924,
+    "vy": 197.29186567543996,
+    "held": false,
+    "pointer": null,
+    "release": null,
+    "snap": null,
+    "vx": 0,
+    "id": "ink"
+  },
+  "paused": {
+    "x": 300.124418781635,
+    "radius": 15,
+    "attachment": null,
+    "y": 349.89874970276924,
+    "vy": 197.29186567543996,
+    "held": false,
+    "pointer": null,
+    "release": null,
+    "snap": null,
+    "vx": 0,
+    "id": "ink"
+  },
+  "held": {
+    "x": 300.124418781635,
+    "radius": 15,
+    "attachment": null,
+    "y": 349.89874970276924,
+    "vy": 197.29186567543996,
+    "held": false,
+    "pointer": null,
+    "release": null,
+    "snap": null,
+    "vx": 0,
+    "id": "ink"
+  },
+  "passed": true
+}

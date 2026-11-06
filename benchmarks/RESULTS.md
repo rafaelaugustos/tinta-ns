@@ -1,5 +1,29 @@
 # Measured results
 
+## Jolt motion and speed controls
+
+Release build `f14180e` moves Flow, Touch following, Tilt physics and bead styling to Jolt RC.11. The retained bitmap still paints permanent ink. These runs use the default 1× speed, live FPS/RSS labels and a 728 × 852 bitmap. [Build metadata](results/jolt-refactor/environment.json).
+
+| Run | UI callbacks/s | Largest interval | Mean painter callback | Sampled process RSS |
+| --- | ---: | ---: | ---: | ---: |
+| [Before, simulator](results/jolt-refactor/before/cadence-1.json) | 60.00 | 16.67 ms | 2.26 ms | 319.48–325.52 MiB |
+| [Jolt, simulator 1](results/jolt-refactor/simulator/cadence-1.json) | 60.00 | 16.67 ms | 0.35 ms | 319.73–326.86 MiB |
+| [Jolt, simulator 2](results/jolt-refactor/simulator/cadence-2.json) | 60.00 | 16.67 ms | 0.34 ms | 322.17–329.91 MiB |
+| [Jolt, simulator 3](results/jolt-refactor/simulator/cadence-3.json) | 59.96 | 34.59 ms | 0.36 ms | 324.86–359.44 MiB |
+| [Jolt, iPhone 17 Pro](results/jolt-refactor/iphone/cadence-1.json) | 59.99 | 16.70 ms | 0.26 ms | 111.44–119.17 MiB |
+
+The baseline is one fresh-process Release run of `b01c343`. Host load was not isolated, and the third new simulator run includes a longer callback interval and a higher RSS sample. The shorter painter callback does **not** establish a rendering speedup: Jolt's animation work happens outside that callback. These measurements support keeping the UI cadence near 60/s for this workload, not a GPU-FPS or framework ranking.
+
+One additional [physical-device offscreen run](results/jolt-refactor/iphone/offscreen-1.json) completed all 450 renders and passed every pixel check. Settled RSS moved from 117.45 to 112.81 MiB (−4.64 MiB); physical footprint changed by −5.53 MiB. This is the unchanged Core Image probe, separate from Jolt motion. Negative changes include process-wide reclamation.
+
+Manual simulator checks covered Flow, Touch, 1×/1.5×/2×/3× changes, a complete cycle at 3×, pause/resume, background/foreground, ink/width selection, clear, undo and a valid 728 × 852 PNG export. Type checking and four unit tests passed. The signed build was installed on the iPhone for the cadence and offscreen runs. Tilt's physical feel still needs a hands-on device check; these automatic runs used Flow.
+
+### Steady-angle Tilt regression
+
+`adfd69b` keeps applying sensor acceleration when its values stay unchanged. Jolt's `replaySensor` supplied a constant synthetic gravity vector with X exactly zero through the native sensor pipeline. The body moved 109.32 points along Y in 900 ms, with no X drift; pausing held its position exactly for another 300 ms. The [replay report](results/jolt-refactor/simulator/tilt-check.json) passed. This validates the sensor-to-physics connection and pause behavior in the simulator, not physical sensor accuracy or feel. The Flow and offscreen figures above were collected before this Tilt-only correction.
+
+## Initial measurements
+
 The initial simulator runs were measured on 2026-11-06 using source `691f30b`, a Debug build, and an iPhone 17 Pro simulator on iOS 27.0 (24A434). The host ran macOS 26.6.2. Two other simulators were booted. No screen recording was running during these measurements. Full build metadata is in [environment.json](environment.json).
 
 ## Offscreen render probe
