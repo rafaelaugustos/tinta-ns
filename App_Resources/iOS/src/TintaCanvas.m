@@ -9,6 +9,8 @@
     CGFloat _pixelScale;
     CGPoint _point, _previous, _target, _velocity, _gravity;
     double _elapsed, _lastTimestamp;
+    NSUInteger _metricFrames;
+    double _metricSeconds, _callbackFPS;
     BOOL _touching, _foreground, _capturing;
     NSUInteger _captureFrames;
     double _captureSeconds, _captureMaxGap, _capturePaintMs;
@@ -97,7 +99,19 @@
 - (void)setGravityX:(double)x y:(double)y { _gravity = CGPointMake(x, y); }
 - (void)suspend { _foreground = NO; [self updateClock]; }
 - (void)resume { _foreground = YES; _lastTimestamp = 0; [self updateClock]; }
-- (void)updateClock { _clock.paused = !_foreground || !_running || !self.window || (_mode == 1 && !_touching && hypot(_velocity.x,_velocity.y) < 1); }
+- (void)updateClock {
+    _clock.paused = !_foreground || !_running || !self.window || (_mode == 1 && !_touching && hypot(_velocity.x,_velocity.y) < 1);
+    if (_clock.paused || !_clock) {
+        _metricFrames = 0; _metricSeconds = 0; _callbackFPS = 0;
+    }
+}
+- (double)callbackFPS { return _clock && !_clock.paused ? _callbackFPS : 0; }
+- (double)processRSSMiB {
+    mach_task_basic_info_data_t info;
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&info, &count) != KERN_SUCCESS) return -1;
+    return info.resident_size / 1048576.;
+}
 - (CGFloat)randomUnit { _random = 1664525 * _random + 1013904223; return (CGFloat)(_random >> 8) / 16777216.; }
 - (void)saveUndo {
     if (_undoImage) CGImageRelease(_undoImage);
@@ -110,6 +124,11 @@
         double interval = _lastTimestamp ? clock.timestamp - _lastTimestamp : 1./60.;
         double dt = _lastTimestamp ? MIN(.033, clock.timestamp - _lastTimestamp) : 1./60.;
         _lastTimestamp = clock.timestamp; _elapsed += dt; _previous = _point;
+        _metricFrames++; _metricSeconds += interval;
+        if (_metricSeconds >= 1) {
+            _callbackFPS = _metricFrames / _metricSeconds;
+            _metricFrames = 0; _metricSeconds = 0;
+        }
         CGFloat w = _paperSize.width, h = _paperSize.height;
         if (_mode == 0) {
             double t = _elapsed * .63;

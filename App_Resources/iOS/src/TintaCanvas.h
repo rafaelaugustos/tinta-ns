@@ -5,6 +5,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) NSInteger mode; // 0 flow, 1 touch, 2 tilt
 @property(nonatomic) BOOL running;
 @property(nonatomic) CGFloat brushWidth;
+@property(nonatomic, readonly) double callbackFPS;
+@property(nonatomic, readonly) double processRSSMiB;
 @property(nonatomic, strong) UIColor *inkColor;
 @property(nonatomic, copy, nullable) void (^modeChanged)(NSInteger mode);
 - (void)setGravityX:(double)x y:(double)y;

@@ -4,6 +4,8 @@ declare class TintaCanvas extends UIView {
   mode: number
   running: boolean
   brushWidth: number
+  readonly callbackFPS: number
+  readonly processRSSMiB: number
   inkColor: UIColor
   modeChanged: ((mode: number) => void) | null
   setGravityXY(x: number, y: number): void

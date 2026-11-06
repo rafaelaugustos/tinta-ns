@@ -9,6 +9,7 @@ import { useTilt } from './composables/useTilt'
 import ToolButton from './components/ToolButton.vue'
 import Opening from './components/Opening.vue'
 import RenderLab from './components/RenderLab.vue'
+import PerformanceReadout from './components/PerformanceReadout.vue'
 
 const width = ref(402), height = ref(790)
 const opening = ref(true), playing = ref(!reducedMotion()), lab = ref(false), busy = ref(false)
@@ -34,6 +35,9 @@ function sync() {
   ink.canvas.brushWidth = brush.value
   ink.canvas.running = playing.value && !opening.value && !lab.value && !busy.value
   ink.setInk(inks[selectedInk.value]!.color)
+}
+function readPerformance() {
+  return { fps: ink?.canvas.callbackFPS ?? 0, rss: ink?.canvas.processRSSMiB ?? -1 }
 }
 function ready(event: EventData) { ink = event.object as InkView; sync() }
 async function enter() {
@@ -104,13 +108,7 @@ onBeforeUnmount(() => { clearTimeout(hintTimer); clearTimeout(autoProbe); motion
           </StackLayout>
           <ToolButton col="1" icon="lab" label="Open render lab" @tap="lab = true" verticalAlignment="center" />
         </GridLayout>
-        <GridLayout left="26" top="104" :width="width-52" height="18" columns="*,auto">
-          <Label text="01 / UNTITLED" fontSize="9" fontWeight="600" letterSpacing="0.1" color="#8A8C7F" />
-          <StackLayout col="1" orientation="horizontal">
-            <GridLayout width="5" height="5" borderRadius="3" :backgroundColor="playing ? '#83964C' : '#B2B3A7'" marginRight="5" verticalAlignment="center" />
-            <Label :text="playing ? 'LIVE PAPER' : 'PAUSED'" fontSize="8" letterSpacing="0.1" color="#8A8C7F" />
-          </StackLayout>
-        </GridLayout>
+        <PerformanceReadout left="26" top="86" :width="width-52" height="38" :read="readPerformance" />
         <GridLayout id="paper" left="18" :top="canvasTop" :width="width-36" :height="canvasHeight" borderRadius="24" borderWidth="1" borderColor="#E2DED1" clipToBounds="true" backgroundColor="#F9F7F1">
           <InkView @canvasReady="ready" @modeChanged="fromCanvas" />
         </GridLayout>
